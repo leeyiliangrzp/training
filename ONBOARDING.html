@@ -1,0 +1,1629 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RISPL Compliance Onboarding Tool</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <!-- html2pdf Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        
+        .toggle-checkbox:checked {
+            right: 0;
+            border-color: #4F46E5;
+        }
+        .toggle-checkbox:checked + .toggle-label {
+            background-color: #4F46E5;
+        }
+        
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+        /* Error styling */
+        .input-error {
+            border-color: #ef4444 !important;
+            background-color: #fef2f2 !important;
+        }
+        .error-icon { animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(2px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in { animation: fadeIn 0.5s ease-out; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased" onload="loadProgress()">
+
+    <!-- Top Navigation -->
+    <nav class="bg-white border-b border-slate-200 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex flex-wrap justify-between items-center py-3 min-h-[4rem] gap-4">
+                <div class="flex items-center gap-4 flex-shrink-0">
+                    <div>
+                        <h1 class="text-lg font-bold text-slate-900 tracking-tight leading-tight">Onboarding <span class="text-indigo-600">Checklist</span></h1>
+                        <p class="text-[10px] text-slate-500 font-medium uppercase tracking-wider leading-none">Razorpay Singapore</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2 flex-grow justify-end flex-wrap">
+                    <div class="text-right hidden md:block mr-2">
+                        <p class="text-xs text-slate-500 whitespace-nowrap" id="current-date">Date: </p>
+                    </div>
+                    <button onclick="resetForm()" class="bg-red-50 text-red-600 border border-red-100 px-3 py-1.5 rounded-md text-xs font-bold hover:bg-red-100 transition-colors whitespace-nowrap">
+                        <i class="fa-solid fa-rotate-right mr-1"></i>Reset
+                    </button>
+                    <button onclick="populateDummyData()" class="bg-green-50 text-green-700 border border-green-100 px-3 py-1.5 rounded-md text-xs font-bold hover:bg-green-100 transition-colors whitespace-nowrap">
+                        <i class="fa-solid fa-wand-magic-sparkles mr-1"></i>Test
+                    </button>
+                    <button onclick="exportToPDF()" class="bg-slate-800 text-white px-3 py-1.5 rounded-md text-xs font-medium hover:bg-slate-900 transition-colors shadow-sm whitespace-nowrap">
+                        <i class="fa-solid fa-file-pdf mr-2"></i>Draft Export
+                    </button>
+                    <button id="submit-btn" onclick="submitReview()" class="bg-indigo-600 text-white px-3 py-1.5 rounded-md text-xs font-medium hover:bg-indigo-700 shadow-sm transition-colors whitespace-nowrap">
+                        Submit
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main id="checklist-content" class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative">
+        
+        <!-- Context Header -->
+        <div class="mb-8 bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+            <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+                <div class="w-full md:w-3/4">
+                    <h2 class="text-lg font-semibold text-slate-900 mb-3">Corporate Entity Application</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">Entity Name</label>
+                            <input type="text" id="merchant_name" oninput="saveProgress()" class="w-full border-slate-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 p-2 text-xs" placeholder="Enter Legal Entity Name">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">Entity Type</label>
+                            <select id="entity_type" onchange="handleEntityTypeChange(); calculateRiskScore(); saveProgress()" class="w-full border-slate-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 p-2 text-xs">
+                                <option value="" disabled selected>Select Entity Type...</option>
+                                <option value="Private Limited" data-points="1">Private Limited</option>
+                                <option value="Public Limited" data-points="1">Public Limited</option>
+                                <option value="Limited Liability Partnership (LLP)" data-points="1">Limited Liability Partnership (LLP)</option>
+                                <option value="Partnership" data-points="2">Partnership</option>
+                                <option value="Limited Partnership" data-points="2">Limited Partnership</option>
+                                <option value="Trust" data-points="2">Trust</option>
+                                <option value="Individual" data-points="3">Individual</option>
+                                <option value="Sole Proprietorship" data-points="3">Sole Proprietorship</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">Years of Incorporation</label>
+                            <select id="years_incorporation" onchange="calculateRiskScore(); saveProgress()" class="w-full border-slate-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 p-2 text-xs">
+                                <option value="" disabled selected>Select Tenure...</option>
+                                <option value="Less Than 1 Year" data-points="3">Less Than 1 Year</option>
+                                <option value="1-3 Years" data-points="2">1-3 Years</option>
+                                <option value=">3 Years" data-points="1">>3 Years</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex gap-3 pt-1">
+                    <div id="header-risk-badge" class="px-3 py-1 bg-slate-100 text-slate-600 rounded-full text-xs font-semibold border border-slate-200 h-fit transition-colors duration-300">Risk: Unassessed</div>
+                </div>
+            </div>
+        </div>
+
+        <form id="complianceForm" class="space-y-6" onchange="saveProgress()">
+
+            <!-- PART A: ENTITY -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="border-b border-slate-100 bg-slate-50/50 px-6 py-4 flex justify-between items-center cursor-pointer" onclick="toggleSection('part-a')">
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold text-sm">A</div>
+                        <h3 class="text-base font-semibold text-slate-800">Entity Identification & Verification</h3>
+                    </div>
+                    <i id="icon-part-a" class="fa-solid fa-chevron-up text-slate-400 transition-transform"></i>
+                </div>
+                
+                <div id="part-a" class="p-6 space-y-6">
+                    <!-- ACRA -->
+                    <div class="grid grid-cols-1 md:grid-cols-12 gap-6 pb-6 border-b border-slate-100">
+                        <div class="md:col-span-4">
+                            <label class="block text-sm font-medium text-slate-700">Business Profile (ACRA/Equivalent)</label>
+                        </div>
+                        <div class="md:col-span-8 space-y-3">
+                            <label class="flex items-center space-x-2 bg-slate-50 px-4 py-2 rounded-lg border border-slate-200 cursor-pointer hover:bg-slate-100 transition-colors w-full">
+                                <input type="checkbox" id="acra_live" class="rounded text-indigo-600 focus:ring-indigo-500 w-4 h-4">
+                                <span class="text-sm text-slate-700 font-medium">Verified Status is "Live/Active"</span>
+                            </label>
+                            <label class="flex items-center space-x-2 bg-slate-50 px-4 py-2 rounded-lg border border-slate-200 cursor-pointer hover:bg-slate-100 transition-colors w-full">
+                                <input type="checkbox" id="acra_recent" class="rounded text-indigo-600 focus:ring-indigo-500 w-4 h-4">
+                                <span class="text-sm text-slate-700 font-medium">Document Valid (Extract Dated <3 Months)</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- M&AA -->
+                    <div class="grid grid-cols-1 md:grid-cols-12 gap-6 pb-6 border-b border-slate-100">
+                        <div class="md:col-span-4">
+                            <label class="block text-sm font-medium text-slate-700">Incorporation/M&A/Registry Documents</label>
+                        </div>
+                        <div class="md:col-span-8 space-y-3">
+                            <label class="flex items-center space-x-2 bg-slate-50 px-4 py-2 rounded-lg border border-slate-200 cursor-pointer hover:bg-slate-100 transition-colors w-full">
+                                <input type="checkbox" id="inc_docs" class="rounded text-indigo-600 focus:ring-indigo-500 w-4 h-4">
+                                <span class="text-sm text-slate-700 font-medium">Incorporation Documents Received</span>
+                            </label>
+                            <label class="flex items-center space-x-2 bg-slate-50 px-4 py-2 rounded-lg border border-slate-200 cursor-pointer hover:bg-slate-100 transition-colors w-full">
+                                <input type="checkbox" id="ma_docs" class="rounded text-indigo-600 focus:ring-indigo-500 w-4 h-4">
+                                <span class="text-sm text-slate-700 font-medium">M&A Documents Received</span>
+                            </label>
+                            <label class="flex items-center space-x-2 bg-slate-50 px-4 py-2 rounded-lg border border-slate-200 cursor-pointer hover:bg-slate-100 transition-colors w-full">
+                                <input type="checkbox" id="biz_license" class="rounded text-indigo-600 focus:ring-indigo-500 w-4 h-4">
+                                <span class="text-sm text-slate-700 font-medium">Business License (If Any)</span>
+                            </label>
+                            
+                            <div class="bg-slate-50 rounded-lg p-3 border border-slate-200 mt-2">
+                                <label class="block text-sm font-medium text-slate-700 mb-2">Do Documents Require Verification?</label>
+                                <p class="text-xs text-slate-500 mb-3 italic">
+                                    Please select No for official registry documents submitted. For any other forms of documentation, please select Yes. (Verification should come by way of Certified True Copy with the following details - Name, Professional Registration IDs/Numbers, Signature, Date, Professional Capacity)
+                                </p>
+                                <div class="flex items-center gap-6 mb-1">
+                                    <label class="flex items-center gap-2 cursor-pointer transition-opacity" id="label_verify_yes">
+                                        <input type="checkbox" id="doc_verify_yes" class="rounded text-indigo-600 focus:ring-indigo-500 w-4 h-4" onchange="toggleVerificationOptions('doc_verify_yes'); saveProgress()">
+                                        <span class="text-sm text-slate-700 font-medium">Yes</span>
+                                    </label>
+                                    <label class="flex items-center gap-2 cursor-pointer transition-opacity" id="label_verify_no">
+                                        <input type="checkbox" id="doc_verify_no" class="rounded text-indigo-600 focus:ring-indigo-500 w-4 h-4" onchange="toggleVerificationOptions('doc_verify_no'); saveProgress()">
+                                        <span class="text-sm text-slate-700 font-medium">No</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Address -->
+                    <div class="grid grid-cols-1 md:grid-cols-12 gap-6">
+                        <div class="md:col-span-4">
+                            <label class="block text-sm font-medium text-slate-700">Operating Address</label>
+                        </div>
+                        <div class="md:col-span-8 space-y-3">
+                            <label class="flex items-center space-x-2 bg-slate-50 px-4 py-2 rounded-lg border border-slate-200 cursor-pointer hover:bg-slate-100 transition-colors w-full">
+                                <input type="checkbox" id="same_address" class="rounded text-indigo-600 focus:ring-indigo-500 w-4 h-4" onchange="toggleAddressUpload()">
+                                <span class="text-sm text-slate-700 font-medium">Same as Registered Address (ACRA)</span>
+                            </label>
+                            <div id="address_upload_container" class="transition-all duration-300">
+                                <label class="flex items-center space-x-2 bg-slate-50 px-4 py-2 rounded-lg border border-slate-200 cursor-pointer hover:bg-slate-100 transition-colors w-full">
+                                    <input type="checkbox" id="doc_sighted" class="rounded text-indigo-600 focus:ring-indigo-500 w-4 h-4" onchange="toggleDocSighted()">
+                                    <span class="text-sm text-slate-700 font-medium">Document Sighted (Dated < 3 months)</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PART B: MANAGEMENT (UBOs) -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="border-b border-slate-100 bg-slate-50/50 px-6 py-4 flex justify-between items-center cursor-pointer" onclick="toggleSection('part-b')">
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold text-sm">B</div>
+                        <h3 class="text-base font-semibold text-slate-800">Management & Ownership</h3>
+                    </div>
+                    <i id="icon-part-b" class="fa-solid fa-chevron-up text-slate-400 transition-transform"></i>
+                </div>
+
+                <div id="part-b" class="p-6 space-y-6">
+                    <!-- Structure Chart -->
+                    <div class="bg-slate-50 p-4 rounded-lg border border-slate-200">
+                        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-3">
+                            <div>
+                                <h4 class="text-sm font-medium text-slate-900">Ownership Structure Chart</h4>
+                                <p class="text-xs text-slate-500">Multi/Complex Layer Structures</p>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <label class="text-sm font-medium text-slate-700 whitespace-nowrap">UBO Layers:</label>
+                                <select id="ubo_layers" onchange="calculateRiskScore()" class="border-slate-300 rounded-lg shadow-sm text-xs focus:ring-indigo-500 focus:border-indigo-500 py-1.5 px-3">
+                                    <option value="" disabled selected>Select...</option>
+                                    <option value="2-3" data-points="1">2-3</option>
+                                    <option value="4-6" data-points="2">4-6</option>
+                                    <option value=">=7" data-points="3">>=7</option>
+                                </select>
+                            </div>
+                            <div class="flex items-center">
+                                <input type="checkbox" class="mr-2" id="simple_structure" onchange="toggleStructureChart()">
+                                <label for="simple_structure" class="text-xs text-slate-600">Simple Structure (1 Layer)</label>
+                            </div>
+                        </div>
+                        <div class="mt-3" id="chart_received_container" class="transition-all duration-200">
+                            <label class="flex items-center space-x-2 bg-white px-4 py-2 rounded-lg border border-slate-300 cursor-pointer hover:bg-slate-50 transition-colors w-full">
+                                <input type="checkbox" id="chart_received" class="rounded text-indigo-600 focus:ring-indigo-500 w-4 h-4">
+                                <span class="text-sm text-slate-700 font-medium">Chart Received & Signed (AS/Director/Key Controller)</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Geographic Risk Profile -->
+                    <div class="bg-slate-50 rounded-lg p-4 border border-slate-200">
+                        <h4 class="text-sm font-medium text-slate-900 mb-1">Geographic Risk Profile</h4>
+                        <p class="text-xs text-slate-500 italic mb-3">*Please select the highest option available</p>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <!-- Entities -->
+                            <div>
+                                <label id="label_geo_entity_inc" class="block text-sm font-medium text-slate-700 mb-1">Entity Country of Incorporation</label>
+                                <select id="geo_entity_inc" onchange="handleGeoChange(this)" class="w-full border-slate-300 rounded-lg shadow-sm text-xs focus:ring-indigo-500 focus:border-indigo-500 p-2">
+                                    <option value="" disabled selected>Select...</option>
+                                    <option value="Singapore" data-points="1">Singapore</option>
+                                    <option value="Non-Singapore" data-points="2">Non-Singapore</option>
+                                    <option value="FATF Listed" data-points="3">FATF Listed</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label id="label_geo_entity_ops" class="block text-sm font-medium text-slate-700 mb-1">Entity Country of Operation</label>
+                                <select id="geo_entity_ops" onchange="handleGeoChange(this)" class="w-full border-slate-300 rounded-lg shadow-sm text-xs focus:ring-indigo-500 focus:border-indigo-500 p-2">
+                                    <option value="" disabled selected>Select...</option>
+                                    <option value="Singapore" data-points="1">Singapore</option>
+                                    <option value="Non-Singapore" data-points="2">Non-Singapore</option>
+                                    <option value="FATF Listed" data-points="3">FATF Listed</option>
+                                </select>
+                            </div>
+                            <!-- UBOs -->
+                            <div>
+                                <label id="label_geo_ubo_nat" class="block text-sm font-medium text-slate-700 mb-1">UBO Nationality</label>
+                                <select id="geo_ubo_nat" onchange="handleGeoChange(this)" class="w-full border-slate-300 rounded-lg shadow-sm text-xs focus:ring-indigo-500 focus:border-indigo-500 p-2">
+                                    <option value="" disabled selected>Select...</option>
+                                    <option value="Singapore" data-points="1">Singapore</option>
+                                    <option value="Non-Singapore" data-points="2">Non-Singapore</option>
+                                    <option value="FATF Listed" data-points="3">FATF Listed</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label id="label_geo_ubo_dom" class="block text-sm font-medium text-slate-700 mb-1">UBO Domicile</label>
+                                <select id="geo_ubo_dom" onchange="handleGeoChange(this)" class="w-full border-slate-300 rounded-lg shadow-sm text-xs focus:ring-indigo-500 focus:border-indigo-500 p-2">
+                                    <option value="" disabled selected>Select...</option>
+                                    <option value="Singapore" data-points="1">Singapore</option>
+                                    <option value="Non-Singapore" data-points="2">Non-Singapore</option>
+                                    <option value="FATF Listed" data-points="3">FATF Listed</option>
+                                </select>
+                            </div>
+                            <!-- Directors -->
+                            <div>
+                                <label id="label_geo_dir_nat" class="block text-sm font-medium text-slate-700 mb-1">Director Nationality</label>
+                                <select id="geo_dir_nat" onchange="handleGeoChange(this)" class="w-full border-slate-300 rounded-lg shadow-sm text-xs focus:ring-indigo-500 focus:border-indigo-500 p-2">
+                                    <option value="" disabled selected>Select...</option>
+                                    <option value="Singapore" data-points="1">Singapore</option>
+                                    <option value="Non-Singapore" data-points="2">Non-Singapore</option>
+                                    <option value="FATF Listed" data-points="3">FATF Listed</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label id="label_geo_dir_dom" class="block text-sm font-medium text-slate-700 mb-1">Director Domicile</label>
+                                <select id="geo_dir_dom" onchange="handleGeoChange(this)" class="w-full border-slate-300 rounded-lg shadow-sm text-xs focus:ring-indigo-500 focus:border-indigo-500 p-2">
+                                    <option value="" disabled selected>Select...</option>
+                                    <option value="Singapore" data-points="1">Singapore</option>
+                                    <option value="Non-Singapore" data-points="2">Non-Singapore</option>
+                                    <option value="FATF Listed" data-points="3">FATF Listed</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- FATF Specification -->
+                        <div id="fatf_spec_container" class="hidden mt-4 border-t border-slate-200 pt-4">
+                            <label class="block text-xs font-bold text-red-700 mb-1">FATF List Classification <span class="text-red-500">*</span></label>
+                            <p class="text-xs text-slate-500 mb-2">Please specify the listing status for the flagged jurisdiction.</p>
+                            <select id="fatf_list_type" onchange="handleFATFListChange(); saveProgress()" class="w-full border-slate-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 p-2 text-xs">
+                                <option value="" disabled selected>Select FATF List...</option>
+                                <option value="FATF Grey List">1 - FATF Grey List</option>
+                                <option value="FATF Black List">2 - FATF Black List</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- UBO List -->
+                    <div>
+                        <div class="flex justify-between items-center mb-3">
+                            <div class="flex items-center gap-2">
+                                <input type="checkbox" id="ubo_applicable" checked onchange="toggleUboSection()" class="rounded text-indigo-600 focus:ring-indigo-500 w-4 h-4">
+                                <h4 id="header_ubo" class="text-sm font-medium text-slate-900">Ultimate Beneficial Owners/Directors/Executive Authority (>25%)</h4>
+                            </div>
+                            <button id="add-ubo-btn" type="button" onclick="addUboRow()" class="text-xs text-indigo-600 font-medium hover:text-indigo-800"><i class="fa-solid fa-plus mr-1"></i> Add Entry</button>
+                        </div>
+                        <div id="ubo-container" class="space-y-4">
+                            <!-- Rows added via JS -->
+                        </div>
+                    </div>
+
+                    <!-- Auth Reps -->
+                    <div class="mt-8 pt-6 border-t border-slate-100">
+                        <div class="flex justify-between items-center mb-3">
+                            <div class="flex items-center gap-2">
+                                <input type="checkbox" id="auth_rep_applicable" checked onchange="toggleAuthRepSection()" class="rounded text-indigo-600 focus:ring-indigo-500 w-4 h-4">
+                                <h4 class="text-sm font-medium text-slate-900">Authorized Representatives (If Any)</h4>
+                            </div>
+                            <button id="add-auth-rep-btn" type="button" onclick="addAuthRepRow()" class="text-xs text-indigo-600 font-medium hover:text-indigo-800"><i class="fa-solid fa-plus mr-1"></i> Add Representative</button>
+                        </div>
+                        <div id="auth-rep-container" class="space-y-4">
+                            <!-- Rows added via JS -->
+                        </div>
+                    </div>
+
+                    <!-- Directors/Trustees -->
+                    <div class="mt-8 pt-6 border-t border-slate-100">
+                        <div class="flex justify-between items-center mb-3">
+                            <h4 id="header_directors" class="text-sm font-medium text-slate-900">Directors</h4>
+                            <button type="button" onclick="addDirectorRow()" class="text-xs text-indigo-600 font-medium hover:text-indigo-800"><i class="fa-solid fa-plus mr-1"></i> Add Entry</button>
+                        </div>
+                        <div id="director-container" class="space-y-4">
+                            <!-- Rows added via JS -->
+                        </div>
+                    </div>
+
+                    <!-- Settlors (Trust Only) -->
+                    <div id="settlor-container-wrapper" class="hidden mt-8 pt-6 border-t border-slate-100">
+                        <div class="flex justify-between items-center mb-3">
+                            <h4 class="text-sm font-medium text-slate-900">Settlors</h4>
+                            <button type="button" onclick="addSettlorRow()" class="text-xs text-indigo-600 font-medium hover:text-indigo-800"><i class="fa-solid fa-plus mr-1"></i> Add Settlor</button>
+                        </div>
+                        <div id="settlor-container" class="space-y-4">
+                            <!-- Rows added via JS -->
+                        </div>
+                    </div>
+
+                    <!-- Protectors (Trust Only) -->
+                    <div id="protector-container-wrapper" class="hidden mt-8 pt-6 border-t border-slate-100">
+                        <div class="flex justify-between items-center mb-3">
+                            <h4 class="text-sm font-medium text-slate-900">Protector (If Any)</h4>
+                            <button type="button" onclick="addProtectorRow()" class="text-xs text-indigo-600 font-medium hover:text-indigo-800"><i class="fa-solid fa-plus mr-1"></i> Add Protector</button>
+                        </div>
+                        <div id="protector-container" class="space-y-4">
+                            <!-- Rows added via JS -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PART C: BUSINESS PROFILE -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="border-b border-slate-100 bg-slate-50/50 px-6 py-4 flex justify-between items-center cursor-pointer" onclick="toggleSection('part-c')">
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold text-sm">C</div>
+                        <h3 class="text-base font-semibold text-slate-800">Business Profile & Risk</h3>
+                    </div>
+                    <i id="icon-part-c" class="fa-solid fa-chevron-up text-slate-400 transition-transform"></i>
+                </div>
+
+                <div id="part-c" class="p-6 space-y-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">Nature of Business</label>
+                            <textarea id="nature_of_business" rows="5" class="w-full border-slate-300 rounded-lg shadow-sm text-xs focus:ring-indigo-500 focus:border-indigo-500 mb-2" placeholder="Describe goods/services sold..."></textarea>
+                            <label class="flex items-center space-x-2 bg-slate-50 px-3 py-2 rounded-lg border border-slate-200 cursor-pointer hover:bg-slate-100 transition-colors">
+                                <input type="checkbox" id="merchant_verified" class="rounded text-indigo-600 focus:ring-indigo-500 w-4 h-4" onchange="saveProgress()">
+                                <span class="text-xs text-slate-700 font-medium">Merchant Verified (Goods/Services Only)</span>
+                            </label>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">MCC</label>
+                            <input id="mcc_code" type="text" class="w-full border-slate-300 rounded-lg shadow-sm text-xs focus:ring-indigo-500 focus:border-indigo-500 mb-3" placeholder="e.g. 5411">
+                            
+                            <label class="block text-sm font-medium text-slate-700 mb-1">Business Risk</label>
+                            <select id="business_category" onchange="calculateRiskScore(); saveProgress()" class="w-full border-slate-300 rounded-lg shadow-sm text-xs focus:ring-indigo-500 focus:border-indigo-500 mb-3">
+                                <option value="" disabled selected>Select Risk Level...</option>
+                                <option value="1" data-points="1">1 - Low</option>
+                                <option value="2" data-points="2">2 - Medium</option>
+                                <option value="3" data-points="3">3 - High</option>
+                            </select>
+
+                            <label class="block text-sm font-medium text-slate-700 mb-1">Website/Platform URL</label>
+                            <div class="flex">
+                                <span class="inline-flex items-center px-3 rounded-l-lg border border-r-0 border-slate-300 bg-slate-50 text-slate-500 text-xs">https://</span>
+                                <input id="website_url" type="text" class="flex-1 w-full border-slate-300 rounded-r-lg text-xs focus:ring-indigo-500 focus:border-indigo-500" placeholder="www.merchant.com">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Online Checks -->
+                    <div class="bg-slate-50 rounded-lg p-4 border border-slate-200">
+                        <h4 class="text-sm font-medium text-slate-900 mb-3">Online Presence Verification</h4>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <label class="flex items-center space-x-2">
+                                <input type="checkbox" id="website_live" class="rounded text-indigo-600 focus:ring-indigo-500">
+                                <span class="text-sm text-slate-600">Website Live</span>
+                            </label>
+                            <label class="flex items-center space-x-2">
+                                <input type="checkbox" id="terms_visible" class="rounded text-indigo-600 focus:ring-indigo-500">
+                                <span class="text-sm text-slate-600">T&Cs/Refund Policy Visible</span>
+                            </label>
+                            <label class="flex items-center space-x-2">
+                                <input type="checkbox" id="prohibited_check" class="rounded text-indigo-600 focus:ring-indigo-500">
+                                <span class="text-sm text-slate-600">No Prohibited Goods</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Trade Compliance -->
+                    <div class="border-t border-slate-100 pt-4 mt-4">
+                        <h4 class="text-sm font-medium text-slate-900 mb-3">Products & Trade Compliance</h4>
+                        <div id="trade_comp_followup" class="pl-4 border-l-2 border-slate-200 ml-1">
+                            <p class="text-sm text-slate-700 mb-2">Has Merchant answered <strong>Yes</strong> in any of the following sections?</p>
+                            <ul class="text-xs text-slate-500 list-disc list-inside mb-3 ml-2">
+                                <li>2 - Export Control Classification</li>
+                                <li>3 - Sensitive Sector Screening</li>
+                                <li>4 - General Technology Screening</li>
+                                <li>5 - End-Use Declaration</li>
+                            </ul>
+                            <div class="flex gap-6 mb-3">
+                                <label class="flex items-center gap-2 cursor-pointer">
+                                    <input type="radio" name="trade_risk" id="trade_risk_yes" class="rounded-full text-indigo-600 focus:ring-indigo-500 w-4 h-4" onchange="toggleTradeRisk(); calculateRiskScore()">
+                                    <span class="text-sm text-slate-700 font-medium">Yes</span>
+                                </label>
+                                <label class="flex items-center gap-2 cursor-pointer">
+                                    <input type="radio" name="trade_risk" id="trade_risk_no" class="rounded-full text-indigo-600 focus:ring-indigo-500 w-4 h-4" onchange="toggleTradeRisk(); calculateRiskScore()">
+                                    <span class="text-sm text-slate-700 font-medium">No</span>
+                                </label>
+                            </div>
+                            <div id="trade_risk_details_container" class="hidden animate-fade-in">
+                                <label class="block text-xs font-bold text-slate-700 mb-1">Please provide details on information entered:</label>
+                                <textarea id="trade_risk_details" rows="2" oninput="saveProgress()" class="w-full border-slate-300 rounded-lg shadow-sm text-xs focus:ring-indigo-500 focus:border-indigo-500 p-2" placeholder="Enter details regarding sensitive goods/sectors..."></textarea>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Regulatory Triggers -->
+                    <div class="border-t border-slate-100 pt-4">
+                         <div id="auto_high_risk_section" class="hidden mb-4 animate-fade-in">
+                            <p class="text-sm font-medium text-slate-900 mb-2">Is the Merchant MCC listed as "Auto High Risk"?</p>
+                            <div class="flex gap-6">
+                                <label class="flex items-center gap-2 cursor-pointer">
+                                    <input type="radio" name="auto_high_risk" id="auto_high_risk_yes" class="rounded-full text-indigo-600 focus:ring-indigo-500 w-4 h-4" onchange="toggleAutoHighRisk()">
+                                    <span class="text-sm text-slate-700 font-medium">Yes</span>
+                                </label>
+                                <label class="flex items-center gap-2 cursor-pointer">
+                                    <input type="radio" name="auto_high_risk" id="auto_high_risk_no" class="rounded-full text-indigo-600 focus:ring-indigo-500 w-4 h-4" onchange="toggleAutoHighRisk()">
+                                    <span class="text-sm text-slate-700 font-medium">No</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- EDD Fields -->
+                        <div id="edd-fields" class="hidden mt-4 bg-orange-50 border border-orange-200 rounded-lg p-4 animate-fade-in">
+                            <div class="flex items-start gap-3">
+                                <i class="fa-solid fa-triangle-exclamation text-orange-500 mt-1"></i>
+                                <div class="w-full">
+                                    <h4 class="text-sm font-bold text-orange-800 mb-2">Enhanced Due Diligence (EDD) Required</h4>
+                                    <div class="mb-4">
+                                        <label class="block text-xs font-bold text-orange-800 mb-1">High Risk MCC / Rationale Details <span class="text-red-500">*</span></label>
+                                        <textarea id="edd_rationale" rows="2" oninput="saveProgress()" class="w-full border-orange-200 rounded-lg shadow-sm text-xs focus:ring-orange-500 focus:border-orange-500 p-2 bg-white text-slate-700" placeholder="Provide details on High Risk Category or specific MCC reasoning (MANDATORY)"></textarea>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PART D: INTERNAL SCREENING -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="border-b border-slate-100 bg-slate-50/50 px-6 py-4 flex justify-between items-center cursor-pointer" onclick="toggleSection('part-d')">
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold text-sm">D</div>
+                        <h3 class="text-base font-semibold text-slate-800">Internal Screening & Controls</h3>
+                    </div>
+                    <i id="icon-part-d" class="fa-solid fa-chevron-up text-slate-400 transition-transform"></i>
+                </div>
+
+                <div id="part-d" class="p-6 space-y-6">
+                    <!-- Risk Rating -->
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-2">Final Risk Rating Assignment</label>
+                        <select id="risk-rating" disabled class="w-full border-slate-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 py-2 px-3 bg-slate-100 text-slate-500 text-xs cursor-not-allowed">
+                            <option value="unassessed" selected>No Calculation (Complete All Fields)</option>
+                            <option value="low">Low Risk</option>
+                            <option value="medium">Medium Risk</option>
+                            <option value="high">High Risk (EDD Required)</option>
+                            <option value="rejected">Rejected</option>
+                        </select>
+                    </div>
+
+                    <!-- Risk Breakdown Graphs -->
+                    <div class="mt-4 p-4 bg-slate-50 rounded-lg border border-slate-200">
+                        <h4 class="text-xs font-bold text-slate-700 uppercase tracking-wide mb-3">Risk Score Breakdown</h4>
+                        <div class="space-y-3">
+                            <!-- Entity Risk -->
+                            <div>
+                                <div class="flex justify-between text-xs mb-1">
+                                    <span class="text-slate-600">Entity Profile</span>
+                                    <span id="score-entity" class="font-medium text-slate-900">-</span>
+                                </div>
+                                <div class="w-full bg-slate-200 rounded-full h-2">
+                                    <div id="bar-entity" class="bg-indigo-500 h-2 rounded-full transition-all duration-500" style="width: 0%"></div>
+                                </div>
+                            </div>
+                            <!-- Structure Risk -->
+                            <div>
+                                <div class="flex justify-between text-xs mb-1">
+                                    <span class="text-slate-600">Ownership Structure</span>
+                                    <span id="score-structure" class="font-medium text-slate-900">-</span>
+                                </div>
+                                <div class="w-full bg-slate-200 rounded-full h-2">
+                                    <div id="bar-structure" class="bg-indigo-500 h-2 rounded-full transition-all duration-500" style="width: 0%"></div>
+                                </div>
+                            </div>
+                            <!-- Geo Risk -->
+                            <div>
+                                <div class="flex justify-between text-xs mb-1">
+                                    <span class="text-slate-600">Geographic Risk</span>
+                                    <span id="score-geo" class="font-medium text-slate-900">-</span>
+                                </div>
+                                <div class="w-full bg-slate-200 rounded-full h-2">
+                                    <div id="bar-geo" class="bg-indigo-500 h-2 rounded-full transition-all duration-500" style="width: 0%"></div>
+                                </div>
+                            </div>
+                            <!-- Business Risk -->
+                            <div>
+                                <div class="flex justify-between text-xs mb-1">
+                                    <span class="text-slate-600">Business Model</span>
+                                    <span id="score-business" class="font-medium text-slate-900">-</span>
+                                </div>
+                                <div class="w-full bg-slate-200 rounded-full h-2">
+                                    <div id="bar-business" class="bg-indigo-500 h-2 rounded-full transition-all duration-500" style="width: 0%"></div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-4 pt-4 border-t border-slate-200">
+                            <label class="flex items-center space-x-2">
+                                <input type="checkbox" id="risk_override_active" disabled class="rounded text-red-600 focus:ring-red-500 w-4 h-4 bg-slate-100 cursor-not-allowed">
+                                <span class="text-xs font-bold text-slate-700">Risk Override Active? (FATF/Prohibited Industries/Trade Compliance)</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Sign Off -->
+                    <div class="border-t border-slate-100 pt-6 mt-6">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700">Compliance Officer</label>
+                                <input type="text" id="compliance_officer_name" oninput="saveProgress()" placeholder="Enter your full name" class="mt-1 w-full border-slate-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-xs p-2">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700">Date of Completion</label>
+                                <input type="date" id="completion_date" oninput="saveProgress()" class="mt-1 w-full border-slate-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-xs p-2">
+                            </div>
+                        </div>
+                        <!-- Reviewer Section -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 border-t border-slate-50 pt-4">
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 mb-1">Compliance Reviewer</label>
+                                <div class="mt-1 w-full border-b border-slate-300 h-8 bg-transparent"></div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 mb-1">Date of Review</label>
+                                <div class="mt-1 w-full border-b border-slate-300 h-8 bg-transparent"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </form>
+    </main>
+
+    <!-- Modals -->
+    <div id="notification-modal" class="fixed inset-0 z-50 flex items-center justify-center hidden bg-black bg-opacity-50 backdrop-blur-sm transition-opacity">
+        <div class="bg-white rounded-xl shadow-2xl p-6 w-full max-w-sm mx-4 transform transition-all scale-100">
+            <div id="modal-icon" class="text-center mb-4 text-4xl"></div>
+            <h3 id="modal-title" class="text-lg font-bold text-center text-slate-900 mb-2">Notification</h3>
+            <p id="modal-message" class="text-sm text-center text-slate-600 mb-6 px-2"></p>
+            <button onclick="closeModal('notification-modal')" class="w-full bg-indigo-600 text-white py-2.5 rounded-lg font-medium hover:bg-indigo-700 transition-colors shadow-sm">Acknowledge</button>
+        </div>
+    </div>
+
+    <div id="confirmation-modal" class="fixed inset-0 z-50 flex items-center justify-center hidden bg-black bg-opacity-50 backdrop-blur-sm transition-opacity">
+        <div class="bg-white rounded-xl shadow-2xl p-6 w-full max-w-sm mx-4 transform transition-all scale-100">
+            <div class="text-center mb-4 text-4xl text-indigo-500"><i class="fa-solid fa-circle-question"></i></div>
+            <h3 class="text-lg font-bold text-center text-slate-900 mb-2">Confirm Action</h3>
+            <p id="confirm-message" class="text-sm text-center text-slate-600 mb-6 px-2"></p>
+            <div class="flex gap-3">
+                <button onclick="closeModal('confirmation-modal')" class="flex-1 bg-white text-slate-700 border border-slate-300 py-2.5 rounded-lg font-medium hover:bg-slate-50 transition-colors shadow-sm">Return</button>
+                <button onclick="confirmAction()" class="flex-1 bg-indigo-600 text-white py-2.5 rounded-lg font-medium hover:bg-indigo-700 transition-colors shadow-sm">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Init
+        document.getElementById('current-date').innerText += new Date().toLocaleDateString('en-SG', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+        let pendingAction = null;
+
+        // --- Core Helpers ---
+        function saveProgress() {
+            const formData = {};
+            document.querySelectorAll('input, select, textarea').forEach((el, i) => {
+                if (el.type !== 'submit' && el.type !== 'button') {
+                    const key = el.id || 'field_' + i;
+                    formData[key] = el.type === 'checkbox' || el.type === 'radio' ? el.checked : el.value;
+                }
+            });
+            localStorage.setItem('rispl_compliance_form', JSON.stringify(formData));
+        }
+
+        function loadProgress() {
+            const saved = localStorage.getItem('rispl_compliance_form');
+            if(!saved) return;
+            const formData = JSON.parse(saved);
+            
+            // Restore Values
+            document.querySelectorAll('input, select, textarea').forEach((el, i) => {
+                const key = el.id || 'field_' + i;
+                if (formData.hasOwnProperty(key)) {
+                    if (el.type === 'checkbox' || el.type === 'radio') el.checked = formData[key];
+                    else el.value = formData[key];
+                }
+            });
+
+            // Restore UI State
+            calculateRiskScore();
+            if(document.getElementById('auto_high_risk_yes').checked) toggleAutoHighRisk(); // Changed from high-risk-toggle
+            if(document.getElementById('simple_structure').checked) toggleStructureChart();
+            if(document.getElementById('doc_verify_yes').checked) toggleVerificationOptions('doc_verify_yes');
+            if(document.getElementById('same_address').checked) toggleAddressUpload();
+            if(document.getElementById('doc_sighted').checked) toggleDocSighted();
+            
+            handleEntityTypeChange(); // Ensure labels logic runs on load
+
+            // Trade Compliance
+            toggleTradeCompliance();
+            toggleTradeRisk();
+
+            // UBO/AuthRep Rows
+            if(document.getElementById('ubo-container').children.length === 0) addUboRow();
+            if(document.getElementById('director-container').children.length === 0) addDirectorRow();
+            if(document.getElementById('auth-rep-container').children.length === 0) addAuthRepRow();
+            
+            // Trust Rows check
+            if(document.getElementById('settlor-container').children.length === 0) addSettlorRow();
+            if(document.getElementById('protector-container').children.length === 0) addProtectorRow();
+        }
+
+        // --- UI Logic ---
+        function highlightError(element) {
+            if (!element) return;
+            element.classList.add('input-error');
+            // Check for existing icon
+            const parent = element.closest('div') || element.parentElement;
+            if (parent && !parent.querySelector('.error-icon')) {
+                const icon = document.createElement('i');
+                icon.className = 'fa-solid fa-circle-exclamation text-red-500 ml-2 error-icon';
+                parent.appendChild(icon);
+            }
+            
+            const clearError = () => { 
+                element.classList.remove('input-error'); 
+                const icon = parent.querySelector('.error-icon');
+                if(icon) icon.remove();
+            };
+            element.addEventListener('input', clearError);
+            element.addEventListener('change', clearError);
+        }
+
+        function showModal(title, message, type) {
+            const modal = document.getElementById('notification-modal');
+            document.getElementById('modal-title').innerText = title;
+            document.getElementById('modal-message').innerText = message;
+            document.getElementById('modal-icon').innerHTML = type === 'error' ? '<i class="fa-solid fa-circle-exclamation text-red-500"></i>' : '<i class="fa-solid fa-circle-check text-green-500"></i>';
+            if (type === 'error') document.getElementById('modal-title').classList.add('text-red-600');
+            else document.getElementById('modal-title').classList.remove('text-red-600');
+            modal.classList.remove('hidden');
+        }
+
+        function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+
+        function toggleSection(id) {
+            document.getElementById(id).classList.toggle('hidden');
+            document.getElementById('icon-' + id).classList.toggle('rotate-180');
+        }
+
+        function toggleAddressUpload() {
+            const isSame = document.getElementById('same_address').checked;
+            document.getElementById('address_upload_container').style.opacity = isSame ? '0.5' : '1';
+            document.getElementById('address_upload_container').style.pointerEvents = isSame ? 'none' : 'auto';
+            if(isSame) document.getElementById('doc_sighted').checked = false;
+            saveProgress();
+        }
+
+        function toggleDocSighted() {
+            if(document.getElementById('doc_sighted').checked) {
+                document.getElementById('same_address').checked = false;
+                document.getElementById('address_upload_container').style.opacity = '1';
+                document.getElementById('address_upload_container').style.pointerEvents = 'auto';
+            }
+            saveProgress();
+        }
+
+        // Restored missing function causing error
+        function toggleVerificationDropdown(checkbox) {
+            const container = checkbox.closest('.flex-col'); 
+            const select = container.querySelector('select');
+            if (checkbox.checked) {
+                select.classList.remove('hidden');
+            } else {
+                select.classList.add('hidden');
+                select.value = "";
+            }
+            saveProgress();
+        }
+
+        function toggleVerificationOptions(id) {
+            const isYes = id === 'doc_verify_yes';
+            // Just toggle mutual exclusivity logic, no container show/hide anymore
+            if(isYes) document.getElementById('doc_verify_no').checked = false;
+            else document.getElementById('doc_verify_yes').checked = false;
+        }
+
+        function toggleTradeCompliance() {
+            // Functionality removed but function kept empty to prevent breaking onload calls
+            saveProgress();
+        }
+
+        function toggleTradeRisk() {
+            const isRisk = document.getElementById('trade_risk_yes').checked;
+            document.getElementById('trade_risk_details_container').classList.toggle('hidden', !isRisk);
+            calculateRiskScore();
+            saveProgress();
+        }
+
+        function handleGeoChange(el) {
+            calculateRiskScore();
+            const geos = ['geo_entity_inc', 'geo_entity_ops', 'geo_ubo_nat', 'geo_ubo_dom', 'geo_dir_nat', 'geo_dir_dom'];
+            const anyFatf = geos.some(id => document.getElementById(id).value.includes('FATF'));
+            document.getElementById('fatf_spec_container').classList.toggle('hidden', !anyFatf);
+            if(!anyFatf) document.getElementById('fatf_list_type').value = "";
+
+            // FIX: Open FATF website if "FATF Listed" is specifically selected on the changed element
+            if(el.value.includes('FATF')) {
+                window.open('https://www.fatf-gafi.org/en/countries/black-and-grey-lists.html', '_blank');
+                showModal('FATF Verification', 'Please verify country status on FATF Website.', 'warning');
+            }
+        }
+
+        function handleFATFListChange() { calculateRiskScore(); }
+
+        function toggleAutoHighRisk() {
+            const isHigh = document.getElementById('auto_high_risk_yes').checked;
+            const eddSection = document.getElementById('edd-fields');
+            
+            // Toggle visibility of EDD fields only
+            eddSection.classList.toggle('hidden', !isHigh);
+
+            // Removed the logic that modified/disabled the business_category dropdown
+            // This prevents the circular dependency that was causing the section to disappear
+            
+            calculateRiskScore();
+        }
+
+        function toggleMutualExclusive(cb) {
+            const grp = cb.getAttribute('data-group');
+            document.querySelectorAll(`input[data-group="${grp}"]`).forEach(el => {
+                if(el !== cb) el.checked = false;
+            });
+            saveProgress();
+        }
+
+        function toggleStructureChart() {
+            const isSimple = document.getElementById('simple_structure').checked;
+            document.getElementById('chart_received_container').classList.toggle('opacity-50', isSimple);
+            document.getElementById('ubo_layers').disabled = isSimple;
+            calculateRiskScore();
+        }
+
+        function addUboRow() { cloneRow('ubo-container'); }
+        function addDirectorRow() { cloneRow('director-container'); }
+        function addAuthRepRow() { cloneRow('auth-rep-container'); }
+        function addSettlorRow() { cloneRow('settlor-container'); }
+        function addProtectorRow() { cloneRow('protector-container'); }
+
+        function cloneRow(containerId) {
+            const container = document.getElementById(containerId);
+            if (container.children.length === 0) {
+                // If empty, create from scratch
+                const div = document.createElement('div');
+                div.className = 'border border-slate-200 rounded-lg p-4 relative hover:border-indigo-300 transition-colors group';
+                // FIX: Added Delete Button
+                div.innerHTML = `
+                    <button type="button" onclick="this.closest('.group').remove(); saveProgress()" class="absolute top-2 right-2 text-slate-400 hover:text-red-500"><i class="fa-solid fa-trash-can"></i></button>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <input type="text" oninput="saveProgress()" placeholder="Full Legal Name" class="w-full border-slate-300 rounded-md text-xs focus:ring-indigo-500 focus:border-indigo-500">
+                        <input type="text" oninput="saveProgress()" placeholder="Nationality" class="w-full border-slate-300 rounded-md text-xs focus:ring-indigo-500 focus:border-indigo-500">
+                    </div>
+                    <div class="mt-3 grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <label class="block text-xs text-slate-500 mb-1">ID Document (Passport/NRIC)</label>
+                            <label class="flex items-center space-x-2 bg-slate-50 px-3 py-2 rounded border border-slate-200 cursor-pointer">
+                                <input type="checkbox" class="rounded text-indigo-600 focus:ring-indigo-500 w-3 h-3">
+                                <span class="text-xs text-slate-700">Copy Received</span>
+                            </label>
+                        </div>
+                        <div>
+                            <label class="block text-xs text-slate-500 mb-1">Proof of Address</label>
+                            <label class="flex items-center space-x-2 bg-slate-50 px-3 py-2 rounded border border-slate-200 cursor-pointer">
+                                <input type="checkbox" class="rounded text-indigo-600 focus:ring-indigo-500 w-3 h-3">
+                                <span class="text-xs text-slate-700">Proof Received</span>
+                            </label>
+                        </div>
+                        <div class="flex flex-col justify-end">
+                            <label class="flex items-center space-x-2 cursor-pointer p-2">
+                                <input type="checkbox" class="rounded text-indigo-600 focus:ring-indigo-500 verification-check" onchange="toggleVerificationDropdown(this)">
+                                <span class="text-xs text-slate-600 font-semibold">Verification Complete</span>
+                            </label>
+                            <select class="hidden w-full border-slate-300 rounded-md text-xs focus:ring-indigo-500 focus:border-indigo-500 mt-1 verification-mode" onchange="saveProgress()">
+                                <option value="" disabled selected>Select Mode...</option>
+                                <option value="Singpass">1 - Singpass</option>
+                                <option value="Certified True Copies">2 - Certified True Copies</option>
+                                <option value="Video KYC Verified">3 - Video KYC Verified</option>
+                            </select>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(div);
+            } else {
+                const clone = container.firstElementChild.cloneNode(true);
+                clone.querySelectorAll('input').forEach(i => { i.value = ''; i.checked = false; });
+                clone.querySelectorAll('select').forEach(s => { s.value = ''; s.classList.add('hidden'); });
+                container.appendChild(clone);
+            }
+            saveProgress();
+        }
+
+        function toggleUboSection() {
+            const show = document.getElementById('ubo_applicable').checked;
+            document.getElementById('ubo-container').classList.toggle('hidden', !show);
+            document.getElementById('add-ubo-btn').classList.toggle('hidden', !show);
+        }
+        function toggleAuthRepSection() {
+            const show = document.getElementById('auth_rep_applicable').checked;
+            document.getElementById('auth-rep-container').classList.toggle('hidden', !show);
+            document.getElementById('add-auth-rep-btn').classList.toggle('hidden', !show);
+        }
+
+        function handleEntityTypeChange() {
+            const type = document.getElementById('entity_type').value;
+            const isTrust = type === 'Trust';
+
+            // Labels
+            document.getElementById('label_geo_entity_inc').innerText = isTrust ? 'Settlor Country of Incorporation' : 'Entity Country of Incorporation';
+            document.getElementById('label_geo_entity_ops').innerText = isTrust ? 'Settlor Country of Operation' : 'Entity Country of Operation';
+            document.getElementById('label_geo_ubo_nat').innerText = isTrust ? 'Beneficiary Nationality' : 'UBO Nationality';
+            document.getElementById('label_geo_ubo_dom').innerText = isTrust ? 'Beneficiary Domicile' : 'UBO Domicile';
+            document.getElementById('label_geo_dir_nat').innerText = isTrust ? 'Trustee Nationality' : 'Director Nationality';
+            document.getElementById('label_geo_dir_dom').innerText = isTrust ? 'Trustee Domicile' : 'Director Domicile';
+
+            // Headers
+            document.getElementById('header_ubo').innerText = isTrust ? 'Beneficiaries' : 'Ultimate Beneficial Owners/Directors/Executive Authority (>25%)';
+            document.getElementById('header_directors').innerText = isTrust ? 'Trustees' : 'Directors';
+
+            // New Sections Visibility
+            document.getElementById('settlor-container-wrapper').classList.toggle('hidden', !isTrust);
+            document.getElementById('protector-container-wrapper').classList.toggle('hidden', !isTrust);
+        }
+
+        // --- Risk Calculation ---
+        function calculateRiskScore() {
+            const getPts = (id) => {
+                const el = document.getElementById(id);
+                if(!el || el.disabled && el.id !== 'business_category') return 0; // Skip check for biz cat if disabled by toggle
+                if(el.value === "") return 0; 
+                
+                const opt = el.options[el.selectedIndex];
+                const pts = opt ? parseInt(opt.getAttribute('data-points') || 0) : 0;
+                
+                // Only apply colors if NOT disabled (to respect gray-out logic)
+                if(!el.disabled) applyRiskColor(id, pts);
+                return pts;
+            };
+
+            // 1. Entity (Average)
+            const p1 = getPts('entity_type');
+            const p2 = getPts('years_incorporation');
+            const entityAvg = (p1 + p2) / 2;
+            
+            // 2. Structure (Single value)
+            let p3 = 0;
+            if (document.getElementById('simple_structure').checked) {
+                p3 = 1;
+            } else {
+                p3 = getPts('ubo_layers');
+            }
+            const structureAvg = p3;
+
+            // 3. Geo (Average of 6 fields)
+            const g1 = getPts('geo_entity_inc');
+            const g2 = getPts('geo_entity_ops');
+            const g3 = getPts('geo_ubo_nat');
+            const g4 = getPts('geo_ubo_dom');
+            const g5 = getPts('geo_dir_nat');
+            const g6 = getPts('geo_dir_dom');
+            const geoAvg = (g1 + g2 + g3 + g4 + g5 + g6) / 6;
+
+            // 4. Business
+            let p4 = 0;
+            const bizCatEl = document.getElementById('business_category');
+            const autoRiskSection = document.getElementById('auto_high_risk_section');
+            const isHighBizRisk = bizCatEl.value === '3';
+            
+            // Auto Visibility Logic
+            if(autoRiskSection) {
+                if (isHighBizRisk) {
+                    autoRiskSection.classList.remove('hidden');
+                } else {
+                    autoRiskSection.classList.add('hidden');
+                    // Reset if hidden to prevent lingering "Yes" triggering High Risk override
+                    const yesBtn = document.getElementById('auto_high_risk_yes');
+                    if(yesBtn && yesBtn.checked) {
+                        yesBtn.checked = false;
+                        document.getElementById('auto_high_risk_no').checked = false;
+                        toggleAutoHighRisk(); // Hide EDD fields
+                    }
+                }
+            }
+
+            const isAutoHigh = document.getElementById('auto_high_risk_yes').checked;
+            if (isAutoHigh) {
+                p4 = 3; 
+            } else {
+                p4 = getPts('business_category');
+            }
+            const businessAvg = p4;
+
+            // --- Update Breakdown Graphs ---
+            const updateBar = (id, avg, valSpanId) => {
+                const bar = document.getElementById(id);
+                const span = document.getElementById(valSpanId);
+                const pct = (avg / 3) * 100;
+                
+                bar.style.width = pct + '%';
+                
+                // Color Logic
+                bar.classList.remove('bg-green-500', 'bg-yellow-500', 'bg-red-500');
+                if(avg <= 1.5) bar.classList.add('bg-green-500');
+                else if(avg <= 2.5) bar.classList.add('bg-yellow-500');
+                else bar.classList.add('bg-red-500');
+
+                // Text Score
+                span.innerText = avg > 0 ? avg.toFixed(1) : '-';
+            };
+
+            updateBar('bar-entity', entityAvg, 'score-entity');
+            updateBar('bar-structure', structureAvg, 'score-structure');
+            updateBar('bar-geo', geoAvg, 'score-geo');
+            updateBar('bar-business', businessAvg, 'score-business');
+
+
+            // --- Overall Score Calculation ---
+            // Logic for FATF/Sanction/Trade Overrides
+            const isTradeRisk = document.getElementById('trade_risk_yes')?.checked;
+            const isFatfBlack = document.getElementById('fatf_list_type').value === 'FATF Black List';
+            
+            // Check FATF List Trigger (Score 3 in any geo)
+            const geos = [g1, g2, g3, g4, g5, g6];
+            const isFatfListed = geos.some(score => score === 3);
+
+            // ** Update Override Checkbox **
+            const overrideCheckbox = document.getElementById('risk_override_active');
+            if (isTradeRisk || isFatfListed || isAutoHigh || isFatfBlack) {
+                overrideCheckbox.checked = true;
+            } else {
+                overrideCheckbox.checked = false;
+            }
+
+            const ratingEl = document.getElementById('risk-rating');
+            const badgeEl = document.getElementById('header-risk-badge');
+
+            // Completeness Check for Calculation (Not Validation)
+            // If essential fields are 0 (unselected), we can't calculate a score accurately unless an override exists.
+            const allPoints = [p1, p2, p3, g1, g2, g3, g4, g5, g6, p4];
+            
+            // Rejection Override (FIX: Ensure colors applied)
+            if (isFatfBlack) {
+                ratingEl.value = 'rejected';
+                ratingEl.className = 'w-full border-slate-300 rounded-lg shadow-sm py-2 px-3 text-xs bg-slate-900 text-white';
+                badgeEl.innerText = 'REJECTED';
+                badgeEl.className = 'px-3 py-1 bg-slate-900 text-white rounded-full text-xs font-semibold border border-slate-900';
+                
+                // Show Error immediately if just selected
+                if(document.activeElement.id === 'fatf_list_type') {
+                     showModal('Onboarding Rejected', 'Client has been rejected from onboarding based on FATF Black List status.', 'error');
+                }
+                return;
+            }
+
+            // High Risk Overrides
+            if (overrideCheckbox.checked) {
+                ratingEl.value = 'high';
+                ratingEl.className = 'w-full border-slate-300 rounded-lg shadow-sm py-2 px-3 text-xs bg-red-50 text-red-700 border-red-300';
+                badgeEl.innerText = 'Risk: High';
+                badgeEl.className = 'px-3 py-1 bg-red-100 text-red-700 rounded-full text-xs font-semibold border border-red-200';
+                return;
+            }
+
+            // If incomplete, don't show low/med yet
+            if (allPoints.some(p => p === 0)) {
+                ratingEl.value = 'unassessed';
+                ratingEl.className = 'w-full border-slate-300 rounded-lg shadow-sm py-2 px-3 text-xs bg-slate-100 text-slate-500';
+                badgeEl.innerText = 'Risk: Unassessed';
+                badgeEl.className = 'px-3 py-1 bg-slate-100 text-slate-600 rounded-full text-xs font-semibold border border-slate-200';
+                return;
+            }
+
+            // Average Calculation
+            const total = allPoints.reduce((a, b) => a + b, 0);
+            const average = total / allPoints.length;
+
+            if (average <= 1.5) {
+                ratingEl.value = 'low';
+                ratingEl.className = 'w-full border-slate-300 rounded-lg shadow-sm py-2 px-3 text-xs bg-green-50 text-green-700 border-green-300';
+                badgeEl.innerText = 'Risk: Low';
+                badgeEl.className = 'px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-semibold border border-green-200';
+            } else if (average <= 2.5) {
+                ratingEl.value = 'medium';
+                ratingEl.className = 'w-full border-slate-300 rounded-lg shadow-sm py-2 px-3 text-xs bg-yellow-50 text-yellow-700 border-yellow-300';
+                badgeEl.innerText = 'Risk: Medium';
+                badgeEl.className = 'px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full text-xs font-semibold border border-yellow-200';
+            } else {
+                ratingEl.value = 'high';
+                ratingEl.className = 'w-full border-slate-300 rounded-lg shadow-sm py-2 px-3 text-xs bg-red-50 text-red-700 border-red-300';
+                badgeEl.innerText = 'Risk: High';
+                badgeEl.className = 'px-3 py-1 bg-red-100 text-red-700 rounded-full text-xs font-semibold border border-red-200';
+            }
+        }
+
+        function applyRiskColor(id, pts) {
+            const el = document.getElementById(id);
+            if(!el) return;
+            el.classList.remove('bg-green-50', 'bg-yellow-50', 'bg-red-50', 'text-green-700', 'text-yellow-700', 'text-red-700');
+            if(pts === 1) el.classList.add('bg-green-50', 'text-green-700');
+            else if(pts === 2) el.classList.add('bg-yellow-50', 'text-yellow-700');
+            else if(pts === 3) el.classList.add('bg-red-50', 'text-red-700');
+        }
+
+        function generateFinalReport(officerName) {
+             const element = document.getElementById('checklist-content');
+             const form = document.getElementById('complianceForm'); 
+             
+             // Expand all sections before printing
+             ['part-a', 'part-b', 'part-c', 'part-d'].forEach(id => {
+                const section = document.getElementById(id);
+                if (section.classList.contains('hidden')) {
+                    section.classList.remove('hidden');
+                }
+             });
+
+             // 1. Prepare EDD Section for Clean Export
+             const eddFields = document.getElementById('edd-fields');
+             let eddOriginalClasses = '';
+             let eddOriginalStyle = '';
+             
+             if (!eddFields.classList.contains('hidden')) {
+                 // Save original state
+                 eddOriginalClasses = eddFields.className;
+                 eddOriginalStyle = eddFields.getAttribute('style') || '';
+
+                 // FORCE CLEAN PAGE BREAK + HIGH CONTRAST STYLING
+                 eddFields.style.pageBreakBefore = 'always';
+                 eddFields.style.marginTop = '2rem';
+                 
+                 // Strip conflicting tailwind background classes manually
+                 eddFields.className = 'border border-orange-300 rounded-lg p-6 mb-8'; 
+                 eddFields.style.backgroundColor = '#ffffff'; 
+                 eddFields.style.color = '#000000';
+                 eddFields.style.opacity = '1';
+                 
+                 // Force textareas to black on white
+                 const textAreas = eddFields.querySelectorAll('textarea');
+                 textAreas.forEach(ta => {
+                     ta.style.height = 'auto';
+                     ta.style.height = (ta.scrollHeight + 20) + 'px'; 
+                     ta.style.color = '#000000';
+                     ta.style.backgroundColor = '#ffffff';
+                     ta.style.border = '1px solid #ccc';
+                 });
+                 
+                 // Force Headers to Black
+                 const headers = eddFields.querySelectorAll('h4, label, span');
+                 headers.forEach(h => {
+                     h.style.color = '#000000';
+                     h.classList.remove('text-orange-800'); // Remove tailwind color class
+                 });
+             }
+
+             // --- INJECT HEADER ---
+             const headerId = 'pdf-export-header';
+             let header = document.getElementById(headerId);
+             if (!header) {
+                 header = document.createElement('div');
+                 header.id = headerId;
+                 // Adjusted margins and padding for better proportion
+                 header.className = 'mb-4 border-b border-indigo-600 pb-3 flex justify-between items-center';
+                 header.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <!-- Logo and Divider Removed -->
+                        <div>
+                            <!-- Reduced font size for better fit -->
+                            <h1 class="text-lg font-bold text-slate-900 tracking-tight leading-tight">Client Onboarding <span class="text-indigo-600">Checklist</span></h1>
+                            <p class="text-[10px] text-slate-500 font-medium uppercase tracking-wider leading-none">Razorpay Singapore</p>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <div class="px-2 py-1 bg-slate-100 text-slate-600 rounded-full text-[10px] font-semibold border border-slate-200">
+                            FINAL REPORT
+                        </div>
+                    </div>
+                 `;
+                 // Insert at the top of content
+                 element.insertBefore(header, element.firstChild);
+             }
+
+             // 2. Formatting for PDF - Remove spacing to prevent empty pages
+             const originalFormClass = form.className;
+             form.classList.remove('space-y-6'); // Remove vertical spacing between sections
+             
+             const sections = document.querySelectorAll('#complianceForm > div');
+             sections.forEach((section, index) => {
+                 section.classList.remove('rounded-xl', 'shadow-sm', 'border', 'border-slate-200'); // Remove card styling to flatten
+                 // Add padding bottom to separate slightly if needed, but page break handles main separation
+                 if (index > 0) section.style.pageBreakBefore = 'always';
+                 section.style.marginBottom = '0px';
+             });
+
+             // 3. Prevent breaking inside smaller containers (sub-cards)
+             // Select all the gray inner boxes
+             const subContainers = document.querySelectorAll('.bg-slate-50.rounded-lg');
+             subContainers.forEach(el => {
+                 el.style.pageBreakInside = 'avoid';
+             });
+             
+             // Create Footer/Watermark Container
+             const footerId = 'submission-footer-mark';
+             let footer = document.getElementById(footerId);
+             if (!footer) {
+                 footer = document.createElement('div');
+                 footer.id = footerId;
+                 footer.style.cssText = `
+                     margin-top: 30px;
+                     padding: 15px;
+                     border-top: 2px solid #334155;
+                     text-align: center;
+                     font-size: 10px;
+                     color: #64748b;
+                     font-weight: bold;
+                     text-transform: uppercase;
+                     width: 100%;
+                     background-color: #f8fafc;
+                 `;
+                 // Append to the main content container so it's at the bottom
+                 element.appendChild(footer);
+             }
+             
+             const now = new Date();
+             const timeString = now.toLocaleDateString('en-SG', { 
+                 day: '2-digit', month: 'short', year: 'numeric',
+                 hour: '2-digit', minute: '2-digit', second: '2-digit'
+             });
+             
+             footer.innerHTML = `
+                 <p style="margin-bottom: 4px; font-size: 12px; color: #0f172a;">CLIENT ONBOARDING CHECKLIST REPORT</p>
+                 <p>OFFICER: <span style="color: #4f46e5;">${officerName}</span> &nbsp;|&nbsp; SUBMITTED ON: <span style="color: #4f46e5;">${timeString}</span></p>
+                 <p style="margin-top: 4px; font-size: 8px; color: #94a3b8;">RAZORPAY SINGAPORE CLIENT ONBOARDING | INTERNAL USE ONLY</p>
+             `;
+             footer.classList.remove('hidden');
+
+             // PDF Options (Better quality for final)
+             const opt = {
+                margin:       0.3,
+                filename:     `RISPL_Compliance_Final_${now.toISOString().split('T')[0]}.pdf`,
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2, useCORS: true, scrollY: 0 },
+                jsPDF:        { unit: 'in', format: 'a4', orientation: 'portrait' },
+                pagebreak:    { mode: ['css', 'legacy'] } // REMOVED avoid-all to prevent big gaps
+            };
+
+            // Generate
+            html2pdf().set(opt).from(element).save().then(() => {
+                footer.classList.add('hidden'); // Hide after print
+                if (header) header.remove(); // Remove header after print
+                
+                // Restore Form
+                form.className = originalFormClass;
+                sections.forEach(section => {
+                    section.classList.add('rounded-xl', 'shadow-sm', 'border', 'border-slate-200');
+                    section.style.pageBreakBefore = '';
+                    section.style.marginBottom = '';
+                });
+                subContainers.forEach(el => el.style.pageBreakInside = '');
+                
+                // Restore EDD styling
+                if (!eddFields.classList.contains('hidden')) {
+                    eddFields.className = eddOriginalClasses;
+                    eddFields.setAttribute('style', eddOriginalStyle);
+                    
+                    // Restore child colors
+                    const headers = eddFields.querySelectorAll('h4, label, span');
+                    headers.forEach(h => {
+                         h.style.color = ''; // reset inline style
+                         if(h.tagName === 'H4' || h.classList.contains('font-medium')) h.classList.add('text-orange-800');
+                    });
+                }
+            });
+        }
+
+        // --- VALIDATION FUNCTIONS (SEQUENTIAL) ---
+        
+        function checkPartA() {
+            const missing = [];
+            // Remove previous error icons
+            document.querySelectorAll('.error-icon').forEach(e => e.remove());
+            document.querySelectorAll('.input-error').forEach(e => e.classList.remove('input-error'));
+
+            if(!document.getElementById('merchant_name').value) {
+                showModal('Incomplete Review', 'Please enter Entity Name!', 'error');
+                highlightError(document.getElementById('merchant_name'));
+                return false;
+            }
+
+            // Removed acra_doc validation
+            if(!document.getElementById('acra_live').checked) missing.push('Verified Status is Live/Active');
+            if(!document.getElementById('acra_recent').checked) missing.push('Document Valid');
+            if(!document.getElementById('inc_docs').checked) missing.push('Incorporation Docs');
+            if(!document.getElementById('ma_docs').checked) missing.push('M&A Docs');
+            
+            // Address Logic
+            const sameAddr = document.getElementById('same_address').checked;
+            const sighted = document.getElementById('doc_sighted').checked;
+            if(!sameAddr && !sighted) missing.push('Address Verification');
+
+            // Verification Mode Logic
+            const vYes = document.getElementById('doc_verify_yes').checked;
+            const vNo = document.getElementById('doc_verify_no').checked;
+            if(!vYes && !vNo) missing.push('Verification Requirement (Yes/No)');
+            // Removed mode selection check
+
+            if(missing.length > 0) {
+                showModal('Incomplete Review', `Please Review A - Entity Identification & Verification: Missing ${missing.join(', ')}`, 'error');
+                return false;
+            }
+            return true;
+        }
+
+        // FIX: STRICT ROW VALIDATION FUNCTION
+        function validateRowSection(containerId, sectionName, isOptional = false) {
+            // Check applicability
+            if(containerId === 'ubo-container' && !document.getElementById('ubo_applicable').checked) return true;
+            if(containerId === 'auth-rep-container' && !document.getElementById('auth_rep_applicable').checked) return true;
+
+            const container = document.getElementById(containerId);
+            
+            // Check empty
+            if(container.children.length === 0) {
+                if(isOptional) return true; // Allowed to be empty
+                showModal('Incomplete Review', `Please Review B - ${sectionName} (At least one entry required)`, 'error');
+                return false;
+            }
+            
+            // Check EACH row
+            for(let i = 0; i < container.children.length; i++) {
+                const row = container.children[i];
+                const missing = [];
+                
+                // Select inputs in this specific row
+                const textInputs = row.querySelectorAll('input[type="text"]');
+                const name = textInputs[0];
+                const nat = textInputs[1];
+                
+                // Select Checkboxes
+                const checkboxes = row.querySelectorAll('input[type="checkbox"]');
+                // The order in cloneRow is: [0] ID Doc, [1] Proof of Address, [2] Verification
+                const idCheck = checkboxes[0];
+                const proofCheck = checkboxes[1];
+                // Verification check has a specific class to be safe
+                const verifyCheck = row.querySelector('.verification-check');
+                const verifyMode = row.querySelector('.verification-mode');
+
+                if(!name.value.trim()) { missing.push('Full Legal Name'); highlightError(name); }
+                if(!nat.value.trim()) { missing.push('Nationality'); highlightError(nat); }
+                if(!idCheck.checked) { missing.push('ID Document Copy'); highlightError(idCheck.closest('label')); }
+                if(!proofCheck.checked) { missing.push('Proof of Address'); highlightError(proofCheck.closest('label')); }
+                
+                if(!verifyCheck.checked) { 
+                    missing.push('Verification Confirmation'); 
+                    highlightError(verifyCheck.closest('label')); 
+                } else {
+                    if(!verifyMode.value) {
+                         missing.push('Verification Mode'); 
+                         highlightError(verifyMode);
+                    }
+                }
+
+                if(missing.length > 0) {
+                    showModal('Incomplete Review', `Please confirm Management/Ownership details (${sectionName} Row ${i+1}): Missing ${missing.join(', ')}`, 'error');
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        // ADDED MISSING GEO VALIDATION FUNCTION
+        function checkGeoProfile() {
+            const geoIds = ['geo_entity_inc', 'geo_entity_ops', 'geo_ubo_nat', 'geo_ubo_dom', 'geo_dir_nat', 'geo_dir_dom'];
+            const labels = [
+                document.getElementById('label_geo_entity_inc').innerText,
+                document.getElementById('label_geo_entity_ops').innerText,
+                document.getElementById('label_geo_ubo_nat').innerText,
+                document.getElementById('label_geo_ubo_dom').innerText,
+                document.getElementById('label_geo_dir_nat').innerText,
+                document.getElementById('label_geo_dir_dom').innerText
+            ];
+            
+            const missing = [];
+            geoIds.forEach((id, index) => {
+                const el = document.getElementById(id);
+                if (!el.value) {
+                    missing.push(labels[index]);
+                    highlightError(el);
+                }
+            });
+
+            if (missing.length > 0) {
+                showModal('Incomplete Review', `Please complete the Geographic Risk Profile: Missing ${missing.length} field(s)`, 'error');
+                return false;
+            }
+            return true;
+        }
+
+        function checkPartC() {
+            const missing = [];
+            if(!document.getElementById('nature_of_business').value) { missing.push('Nature of Business'); highlightError(document.getElementById('nature_of_business')); }
+            
+            // New Validation for Merchant Verification Checkbox
+            if(!document.getElementById('merchant_verified').checked) { 
+                missing.push('Merchant Verified (Goods/Services Only)'); 
+                // Highlight the label container for better visibility
+                highlightError(document.getElementById('merchant_verified').closest('label')); 
+            }
+
+            if(!document.getElementById('mcc_code').value) { missing.push('MCC'); highlightError(document.getElementById('mcc_code')); }
+            if(!document.getElementById('website_url').value) { missing.push('Website URL'); highlightError(document.getElementById('website_url')); }
+            if(!document.getElementById('business_category').value) { missing.push('Business Risk'); highlightError(document.getElementById('business_category')); }
+
+            if(missing.length > 0) {
+                showModal('Business Profile Review', `Please review Business Profile & Risk - ${missing.join(', ')}`, 'error');
+                return false;
+            }
+
+            // Online Checks
+            const checks = [];
+            if(!document.getElementById('website_live').checked) checks.push('Website Live');
+            if(!document.getElementById('terms_visible').checked) checks.push('T&Cs');
+            if(!document.getElementById('prohibited_check').checked) checks.push('No Prohibited Goods');
+            
+            if(checks.length > 0) {
+                showModal('Business Profile Review', `Please review Business Profile & Risk - Online Presence Checks: Missing ${checks.join(', ')}`, 'error');
+                return false;
+            }
+            return true;
+        }
+
+        function validateEDD() {
+            if(!document.getElementById('auto_high_risk_yes').checked) return true;
+            
+            if(!document.getElementById('edd_rationale').value) {
+                showModal('Incomplete EDD', 'Please provide High Risk Rationale details.', 'error');
+                highlightError(document.getElementById('edd_rationale'));
+                return false;
+            }
+            
+            return true;
+        }
+
+        function checkSpecificDate(id, name) {
+            const val = document.getElementById(id).value;
+            if(!val) return true; // Error if empty
+            return false;
+        }
+
+        function submitReview() {
+            // SEQUENTIAL VALIDATION START
+            
+            // 1. Part A
+            if(!checkPartA()) return;
+
+            // 2. Part B (Structure & Rows)
+            if(!document.getElementById('simple_structure').checked && !document.getElementById('chart_received').checked) {
+                showModal('Incomplete Review', "Please Review B - Structure Chart: Select either 'Simple Structure' or 'Chart Received'", 'error');
+                return;
+            }
+
+            const isTrust = document.getElementById('entity_type').value === 'Trust';
+
+            if (isTrust) {
+                // Trust Validation Logic
+                if(!validateRowSection('ubo-container', 'Beneficiaries')) return;
+                if(!validateRowSection('settlor-container', 'Settlors')) return;
+                if(!validateRowSection('director-container', 'Trustees')) return;
+                
+                // Optional sections for Trust
+                if(!validateRowSection('protector-container', 'Protectors', true)) return;
+                if(!validateRowSection('auth-rep-container', 'Authorized Representatives', true)) return; 
+
+            } else {
+                // Corporate Validation Logic
+                if(!validateRowSection('ubo-container', 'UBOs')) return;
+                if(!validateRowSection('director-container', 'Directors')) return;
+                if(!validateRowSection('auth-rep-container', 'Authorized Representatives')) return;
+            }
+
+            // 2.1 Geographic Profile (Added Check)
+            if (!checkGeoProfile()) return;
+
+            // 3. Part C (Profile)
+            if(!checkPartC()) return;
+
+            // 4. Trade Compliance
+            const rYes = document.getElementById('trade_risk_yes').checked;
+            const rNo = document.getElementById('trade_risk_no').checked;
+            if(!rYes && !rNo) {
+                showModal('Incomplete Review', 'Please indicate if the Merchant has flagged any sensitive sectors/technologies in the Product Classification & Trade Compliance form!', 'error');
+                return;
+            }
+            if(rYes && document.getElementById('trade_risk_details').value.trim() === '') {
+                showModal('Products & Trade Compliance', 'Please provide details on Merchant elaboration for Products & Trade Compliance!', 'error');
+                return;
+            }
+
+            // 5. EDD
+            if(!validateEDD()) return;
+
+            // 6. FATF
+            const fatfVisible = !document.getElementById('fatf_spec_container').classList.contains('hidden');
+            if(fatfVisible && !document.getElementById('fatf_list_type').value) {
+                showModal('Incomplete Review', 'Please provide FATF List Classification', 'error');
+                highlightError(document.getElementById('fatf_list_type'));
+                return;
+            }
+
+            // 7. Risk Rating
+            if(document.getElementById('risk-rating').value === 'unassessed') {
+                showModal('Incomplete Review', 'Please calculate Risk Rating!', 'error');
+                return;
+            }
+            if(document.getElementById('risk-rating').value === 'rejected') {
+                showModal('Submission Blocked', 'This application is REJECTED due to FATF Black List status.', 'error');
+                return;
+            }
+
+            // 8. Sign Off & Dates
+            if(!document.getElementById('compliance_officer_name').value) {
+                showModal('Incomplete Review', 'Please enter Compliance Officer Name!', 'error');
+                highlightError(document.getElementById('compliance_officer_name'));
+                return;
+            }
+            if(!document.getElementById('completion_date').value) {
+                showModal('Invalid Date', 'Please check dates entered!', 'error');
+                return;
+            }
+
+            // FINAL SUCCESS
+            generateFinalReport(document.getElementById('compliance_officer_name').value);
+            showModal('Success', 'Compliance Review Submitted successfully. Final Audit Report Generated.', 'success');
+        }
+
+        function resetForm() {
+            localStorage.removeItem('rispl_compliance_form');
+            location.reload();
+        }
+
+        function populateDummyData() {
+            // Helper for Safe Value Setting
+            const setValueSafe = (id, val) => {
+                const el = document.getElementById(id);
+                if (el) el.value = val;
+            };
+            const setCheckedSafe = (id, bool) => {
+                const el = document.getElementById(id);
+                if (el) el.checked = bool;
+            };
+
+            // Header
+            setValueSafe('merchant_name', 'Test Merchant Pte Ltd');
+            setValueSafe('entity_type', 'Private Limited');
+            setValueSafe('years_incorporation', '1-3 Years');
+            
+            // Dates
+            const today = new Date().toISOString().split('T')[0];
+            setValueSafe('acra_date', today);
+            setValueSafe('completion_date', today);
+
+            // Checkboxes Part A
+            setCheckedSafe('acra_live', true);
+            setCheckedSafe('acra_recent', true);
+            setCheckedSafe('inc_docs', true);
+            setCheckedSafe('ma_docs', true);
+            setCheckedSafe('biz_license', true);
+            
+            // Verifiction
+            setCheckedSafe('doc_verify_yes', true);
+            toggleVerificationOptions('doc_verify_yes');
+            // Mode set removed
+            
+            // Address
+            setCheckedSafe('same_address', true);
+            toggleAddressUpload();
+
+            // Part B
+            setCheckedSafe('simple_structure', true);
+            toggleStructureChart();
+            
+            // Part C
+            setValueSafe('nature_of_business', 'Test Business Description');
+            setCheckedSafe('merchant_verified', true); // New Checkbox
+            setValueSafe('mcc_code', '5411');
+            setValueSafe('business_category', '3'); // Set to High Risk for testing
+            setValueSafe('website_url', 'www.test.com');
+            setCheckedSafe('website_live', true);
+            setCheckedSafe('terms_visible', true);
+            setCheckedSafe('prohibited_check', true);
+
+            // Trade Compliance
+            setCheckedSafe('trade_risk_no', true);
+            toggleTradeRisk();
+
+            // Set Auto High Risk to No for standard test
+            // Note: Since business_category is 3, this section will be visible.
+            setCheckedSafe('auto_high_risk_no', true);
+            toggleAutoHighRisk();
+
+            // Sign Off
+            setValueSafe('compliance_officer_name', 'Test Officer');
+
+            // Populate Dynamic Rows (UBO, Director, Auth Rep)
+            const populateRow = (containerId, name, nat) => {
+                const container = document.getElementById(containerId);
+                if (container && container.children.length === 0) cloneRow(containerId);
+                if (container && container.firstElementChild) {
+                    const row = container.firstElementChild;
+                    const inputs = row.querySelectorAll('input[type="text"]');
+                    if (inputs[0]) inputs[0].value = name;
+                    if (inputs[1]) inputs[1].value = nat;
+                    row.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+                        cb.checked = true;
+                        // Trigger toggle if it's the verification check
+                        if(cb.classList.contains('verification-check')) {
+                            toggleVerificationDropdown(cb);
+                        }
+                    });
+                    const sel = row.querySelector('select');
+                    if(sel) sel.value = "Singpass";
+                }
+            };
+
+            populateRow('ubo-container', 'John Doe (UBO)', 'Singaporean');
+            populateRow('director-container', 'Jane Doe (Director)', 'Singaporean');
+            // Auth Rep might be empty by default, let's add one for testing
+            populateRow('auth-rep-container', 'Jim Doe (Rep)', 'Singaporean');
+            
+            // Populate Geo for Calculation
+            setValueSafe('geo_entity_inc', 'Singapore');
+            setValueSafe('geo_entity_ops', 'Singapore');
+            setValueSafe('geo_ubo_nat', 'Singapore');
+            setValueSafe('geo_ubo_dom', 'Singapore');
+            setValueSafe('geo_dir_nat', 'Singapore');
+            setValueSafe('geo_dir_dom', 'Singapore');
+
+            calculateRiskScore();
+            saveProgress();
+            handleEntityTypeChange(); // Ensure logic correct after populating
+            showModal('Success', 'Dummy Data Populated.', 'success');
+        }
+    </script>
+</body>
+</html>

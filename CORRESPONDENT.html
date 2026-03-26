@@ -1,0 +1,1047 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Correspondent Account Checklist</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <!-- html2pdf Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+        /* Error styling */
+        .input-error {
+            border-color: #ef4444 !important; /* Red-500 */
+            background-color: #fef2f2 !important; /* Red-50 */
+        }
+        .error-icon { animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(2px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* COMPACT MODE FOR PDF EXPORT */
+        .compact-pdf .p-6 { padding: 0.5rem !important; }
+        .compact-pdf .gap-6 { gap: 0.5rem !important; }
+        .compact-pdf .mb-6 { margin-bottom: 0.5rem !important; }
+        .compact-pdf .mb-8 { margin-bottom: 0.75rem !important; }
+        .compact-pdf .py-8 { padding-top: 1rem !important; padding-bottom: 1rem !important; }
+        .compact-pdf .space-y-6 > :not([hidden]) ~ :not([hidden]) { --tw-space-y-reverse: 0; margin-top: 0.5rem !important; }
+        .compact-pdf .text-base { font-size: 0.8rem !important; }
+        .compact-pdf .text-sm { font-size: 0.7rem !important; }
+        .compact-pdf .text-xs { font-size: 0.65rem !important; }
+        .compact-pdf .border-t { padding-top: 0.5rem !important; margin-top: 0.5rem !important; }
+        
+        /* Force Page Break for Section E */
+        .page-break-before { page-break-before: always !important; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased" onload="loadProgress()">
+
+    <!-- Header -->
+    <nav id="main-nav" class="bg-white border-b border-slate-200 sticky top-0 z-50">
+        <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex flex-wrap justify-between items-center py-4 gap-4">
+                <!-- Identity -->
+                <div id="header-identity">
+                    <h1 class="text-lg font-bold text-slate-900 tracking-tight leading-tight">Correspondent Account <span class="text-indigo-600">Checklist</span></h1>
+                    <p class="text-[10px] text-slate-500 font-medium uppercase tracking-wider leading-none">Razorpay Singapore</p>
+                </div>
+
+                <!-- Actions -->
+                <div id="header-actions" class="flex items-center gap-2 flex-grow justify-end flex-wrap">
+                    <button onclick="resetForm()" class="bg-red-50 text-red-600 border border-red-100 px-3 py-1.5 rounded-md text-xs font-bold hover:bg-red-100 transition-colors whitespace-nowrap">
+                        <i class="fa-solid fa-rotate-right mr-1"></i>Reset
+                    </button>
+                    <button onclick="populateDummyData()" class="bg-green-50 text-green-700 border border-green-100 px-3 py-1.5 rounded-md text-xs font-bold hover:bg-green-100 transition-colors whitespace-nowrap">
+                        <i class="fa-solid fa-wand-magic-sparkles mr-1"></i>Test
+                    </button>
+                    <button onclick="exportToPDF()" class="bg-slate-800 text-white px-3 py-1.5 rounded-md text-xs font-medium hover:bg-slate-900 transition-colors shadow-sm whitespace-nowrap">
+                        <i class="fa-solid fa-file-pdf mr-2"></i>Export PDF
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main id="checklist-content" class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative">
+
+        <!-- Institution Name Header -->
+        <div class="mb-8 bg-indigo-50 p-6 rounded-xl border border-indigo-100">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-semibold text-indigo-700 mb-1">Financial Institution Name</label>
+                    <input type="text" id="fi_name" oninput="saveProgress()" class="w-full border-indigo-200 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 p-2 text-xs" placeholder="e.g. Bank of Commerce Ltd">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-indigo-700 mb-1">Application Reference</label>
+                    <input type="text" id="app_ref" oninput="saveProgress()" class="w-full border-indigo-200 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 p-2 text-xs" placeholder="e.g. CAA-2024-001">
+                </div>
+            </div>
+        </div>
+
+        <form id="cbaForm" class="space-y-6" onchange="saveProgress()">
+
+            <!-- PART A: ENTITY IDENTIFICATION -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="border-b border-slate-100 bg-slate-50/50 px-6 py-4 flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-full bg-slate-800 text-white flex items-center justify-center font-bold text-sm">A</div>
+                    <h3 class="text-base font-semibold text-slate-800">Entity Identification & Verification</h3>
+                </div>
+                <div class="p-6 space-y-4">
+                    <!-- Documents Checklist -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <label class="flex items-center space-x-3 p-3 border border-slate-200 rounded-lg bg-slate-50 cursor-pointer hover:bg-slate-100 transition-colors">
+                            <input type="checkbox" id="cert_inc" class="rounded text-indigo-600 focus:ring-indigo-500 w-4 h-4">
+                            <span class="text-sm font-medium text-slate-700">1. Certificate of Incorporation</span>
+                        </label>
+                        <label class="flex items-center space-x-3 p-3 border border-slate-200 rounded-lg bg-slate-50 cursor-pointer hover:bg-slate-100 transition-colors">
+                            <input type="checkbox" id="reg_license" class="rounded text-indigo-600 focus:ring-indigo-500 w-4 h-4">
+                            <span class="text-sm font-medium text-slate-700">2. Regulatory License</span>
+                        </label>
+                    </div>
+
+                    <!-- Address & Geography -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+                        <div class="md:col-span-2">
+                            <label class="block text-sm font-medium text-slate-700 mb-1">3. Operating Address</label>
+                            <input type="text" id="op_address" oninput="saveProgress()" class="w-full border-slate-300 rounded-lg shadow-sm text-xs focus:ring-indigo-500 focus:border-indigo-500 p-2" placeholder="Full Registered Address">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">4. Country of Incorporation</label>
+                            <select id="country_inc" onchange="handleGeoChange(this)" class="w-full border-slate-300 rounded-lg shadow-sm text-xs focus:ring-indigo-500 focus:border-indigo-500 p-2">
+                                <option value="" disabled selected>Select...</option>
+                                <option value="Singapore">Singapore</option>
+                                <option value="Non-Singapore">Non-Singapore</option>
+                                <option value="FATF Listed">FATF Listed</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">Country of Operation</label>
+                            <select id="country_ops" onchange="handleGeoChange(this)" class="w-full border-slate-300 rounded-lg shadow-sm text-xs focus:ring-indigo-500 focus:border-indigo-500 p-2">
+                                <option value="" disabled selected>Select...</option>
+                                <option value="Singapore">Singapore</option>
+                                <option value="Non-Singapore">Non-Singapore</option>
+                                <option value="FATF Listed">FATF Listed</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- FATF Warning Container -->
+                    <div id="fatf_spec_container" class="hidden mt-2 border-t border-slate-200 pt-3 bg-red-50 p-4 rounded-lg border border-red-100"> 
+                        <label class="block text-xs font-bold text-red-700 mb-1">FATF List Classification</label>
+                        <p class="text-xs text-slate-500 mb-2">Please specify the listing status for the flagged jurisdiction.</p>
+                        <select id="fatf_list_type" onchange="handleFATFListChange(this); saveProgress()" class="w-full border-red-300 rounded-lg shadow-sm focus:ring-red-500 focus:border-red-500 p-2 text-xs bg-white">
+                            <option value="" disabled selected>Select FATF List...</option>
+                            <option value="FATF Grey List">1 - FATF Grey List</option>
+                            <option value="FATF Black List">2 - FATF Black List</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PART B: AUTHORIZED SIGNATORIES / DIRECTORS -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="border-b border-slate-100 bg-slate-50/50 px-6 py-4 flex justify-between items-center">
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-full bg-slate-800 text-white flex items-center justify-center font-bold text-sm">B</div>
+                        <h3 class="text-base font-semibold text-slate-800">List of Authorized Signatories / Directors</h3>
+                    </div>
+                    <button type="button" onclick="addSignatoryRow()" class="text-xs text-indigo-600 font-bold hover:text-indigo-800 bg-indigo-50 px-3 py-1.5 rounded border border-indigo-100">
+                        <i class="fa-solid fa-plus mr-1"></i> Add Signatory
+                    </button>
+                </div>
+                <div class="p-6">
+                    <div id="signatory-container" class="space-y-3">
+                        <!-- Dynamic Rows -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- PART C: CHIEF COMPLIANCE OFFICER -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="border-b border-slate-100 bg-slate-50/50 px-6 py-4 flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-full bg-slate-800 text-white flex items-center justify-center font-bold text-sm">C</div>
+                    <h3 class="text-base font-semibold text-slate-800">Chief Compliance Officer</h3>
+                </div>
+                <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium text-slate-700 mb-1">CCO Name</label>
+                        <input type="text" id="cco_name" oninput="saveProgress()" class="w-full border-slate-300 rounded-lg shadow-sm text-xs focus:ring-indigo-500 focus:border-indigo-500 p-2">
+                    </div>
+                    <!-- Resume Checkbox -->
+                    <div class="flex items-end md:col-span-2">
+                        <label class="flex items-center space-x-3 p-2 w-full border border-slate-200 rounded-lg bg-slate-50 cursor-pointer hover:bg-slate-100 transition-colors">
+                            <input type="checkbox" id="cco_cv_received" class="rounded text-indigo-600 focus:ring-indigo-500 w-4 h-4">
+                            <span class="text-sm font-medium text-slate-700">1. Resume / CV Received & Verified</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PART D: DUE DILIGENCE & POLICIES -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="border-b border-slate-100 bg-slate-50/50 px-6 py-4 flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-full bg-slate-800 text-white flex items-center justify-center font-bold text-sm">D</div>
+                    <h3 class="text-base font-semibold text-slate-800">Due Diligence & Policies</h3>
+                </div>
+                <div class="p-6 space-y-4">
+                    <!-- Standard Checks -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <label class="flex items-center space-x-3 p-3 border border-slate-200 rounded-lg bg-slate-50 cursor-pointer hover:bg-slate-100 transition-colors">
+                            <input type="checkbox" id="wolfsberg_received" class="rounded text-indigo-600 focus:ring-indigo-500 w-4 h-4">
+                            <span class="text-sm font-medium text-slate-700">1. Wolfsberg CDDQ Received & Reviewed</span>
+                        </label>
+                        <label class="flex items-center space-x-3 p-3 border border-slate-200 rounded-lg bg-slate-50 cursor-pointer hover:bg-slate-100 transition-colors">
+                            <input type="checkbox" id="aml_policies_received" class="rounded text-indigo-600 focus:ring-indigo-500 w-4 h-4">
+                            <span class="text-sm font-medium text-slate-700">2. AML Policies & Procedures Received & Assessed</span>
+                        </label>
+                    </div>
+
+                    <!-- CONDITIONAL: AML AUDIT (Hidden by default) -->
+                    <div id="aml_audit_container" class="hidden p-4 bg-orange-50 border border-orange-200 rounded-lg animate-fade-in">
+                        <h4 class="text-xs font-bold text-orange-800 uppercase mb-2">
+                            <i class="fa-solid fa-triangle-exclamation mr-1"></i> Enhanced Due Diligence (Grey List)
+                        </h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
+                            <label class="flex items-center space-x-3 p-3 border border-orange-200 rounded-lg bg-white cursor-pointer hover:bg-orange-50 transition-colors">
+                                <input type="checkbox" id="aml_audit_received" class="rounded text-orange-600 focus:ring-orange-500 w-4 h-4">
+                                <span class="text-sm font-medium text-orange-900">3. AML Audit Received & Reviewed</span>
+                            </label>
+                            <div>
+                                <label class="block text-xs font-semibold text-orange-800 mb-1">MM/YY of Audit <span class="text-red-500">*</span></label>
+                                <input type="text" id="aml_audit_date" oninput="saveProgress()" class="w-full border-orange-300 rounded-lg shadow-sm text-xs focus:ring-orange-500 focus:border-orange-500 p-2" placeholder="e.g. 05/24">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PART E: ASSESSMENT -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden page-break-before">
+                <div class="border-b border-slate-100 bg-slate-50/50 px-6 py-4 flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-full bg-slate-800 text-white flex items-center justify-center font-bold text-sm">E</div>
+                    <h3 class="text-base font-semibold text-slate-800">Risk Assessment</h3>
+                </div>
+                <div class="p-6 space-y-4">
+                    
+                    <!-- Question 1 -->
+                    <div class="flex flex-col gap-3 p-3 border border-slate-100 rounded-lg bg-slate-50 transition-all duration-300" id="wolfsberg_q_container">
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm font-medium text-slate-700">Does the CDDQ contain any negative responses to Wolfsberg Principles?</span>
+                            <div class="flex gap-4">
+                                <label class="flex items-center gap-2 cursor-pointer">
+                                    <input type="radio" name="negative_reply" value="yes" onchange="toggleWolfsbergRisks(true); saveProgress()" class="text-red-600 focus:ring-red-500">
+                                    <span class="text-xs text-slate-600">Yes</span>
+                                </label>
+                                <label class="flex items-center gap-2 cursor-pointer">
+                                    <input type="radio" name="negative_reply" value="no" onchange="toggleWolfsbergRisks(false); saveProgress()" class="text-green-600 focus:ring-green-500">
+                                    <span class="text-xs text-slate-600">No</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Dynamic Risk Categories (Hidden by default) -->
+                        <div id="wolfsberg_risks" class="hidden mt-2 pt-3 border-t border-slate-200 pl-2">
+                            <label class="block text-xs font-bold text-red-700 mb-2">Select Negative Response Categories:</label>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-2 mb-3">
+                                <label class="flex items-center space-x-2">
+                                    <input type="checkbox" id="risk_ownership" class="rounded text-red-600 focus:ring-red-500 w-3.5 h-3.5">
+                                    <span class="text-xs text-slate-700">Entity Structure / Ownership Risks (Offshore Banking / Bearer Shares)</span>
+                                </label>
+                                <label class="flex items-center space-x-2">
+                                    <input type="checkbox" id="risk_program" class="rounded text-red-600 focus:ring-red-500 w-3.5 h-3.5">
+                                    <span class="text-xs text-slate-700">AML / Sanctions Program Deficiencies (Insufficient Staff / No Testing)</span>
+                                </label>
+                                <label class="flex items-center space-x-2">
+                                    <input type="checkbox" id="risk_products" class="rounded text-red-600 focus:ring-red-500 w-3.5 h-3.5">
+                                    <span class="text-xs text-slate-700">Prohibited / High Risk Products</span>
+                                </label>
+                                <label class="flex items-center space-x-2">
+                                    <input type="checkbox" id="risk_kyc" class="rounded text-red-600 focus:ring-red-500 w-3.5 h-3.5">
+                                    <span class="text-xs text-slate-700">Weak KYC/CDD Standards (No ID Verification / No Beneficial Ownership Check)</span>
+                                </label>
+                                <label class="flex items-center space-x-2">
+                                    <input type="checkbox" id="risk_abc" class="rounded text-red-600 focus:ring-red-500 w-3.5 h-3.5">
+                                    <span class="text-xs text-slate-700">Lack of ABC / Fraud Controls</span>
+                                </label>
+                                <label class="flex items-center space-x-2">
+                                    <input type="checkbox" id="risk_other" class="rounded text-red-600 focus:ring-red-500 w-3.5 h-3.5">
+                                    <span class="text-xs text-slate-700">Other</span>
+                                </label>
+                            </div>
+                            
+                            <label class="block text-xs font-bold text-slate-700 mb-1">Details of Negative Responses & Mitigating Controls <span class="text-red-500">*</span></label>
+                            <textarea id="risk_details" rows="3" oninput="saveProgress()" class="w-full border-red-200 rounded-lg shadow-sm text-xs focus:ring-red-500 focus:border-red-500 p-2 bg-white" placeholder="Describe the negative responses and any mitigating controls identified..."></textarea>
+                        </div>
+                    </div>
+
+                    <!-- Question 2 -->
+                    <div class="flex items-center justify-between p-3 border border-slate-100 rounded-lg bg-slate-50">
+                        <span class="text-sm font-medium text-slate-700">Does the entity prohibit business with Shell Banks?</span>
+                        <div class="flex gap-4">
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="radio" name="shell_bank_prohibition" value="yes" onchange="checkRejectionTriggers(); saveProgress()" class="text-green-600 focus:ring-green-500">
+                                <span class="text-xs text-slate-600">Yes</span>
+                            </label>
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="radio" name="shell_bank_prohibition" value="no" onchange="checkRejectionTriggers(); saveProgress()" class="text-red-600 focus:ring-red-500">
+                                <span class="text-xs text-slate-600">No</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Question 3 -->
+                    <div class="flex items-center justify-between p-3 border border-slate-100 rounded-lg bg-slate-50">
+                        <span class="text-sm font-medium text-slate-700">Does the entity have a physical presence in its country of incorporation?</span>
+                        <div class="flex gap-4">
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="radio" name="physical_presence" value="yes" onchange="saveProgress()" class="text-green-600 focus:ring-green-500">
+                                <span class="text-xs text-slate-600">Yes</span>
+                            </label>
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="radio" name="physical_presence" value="no" onchange="saveProgress()" class="text-red-600 focus:ring-red-500">
+                                <span class="text-xs text-slate-600">No</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Question 4 -->
+                    <div class="flex flex-col gap-3 p-3 border border-slate-100 rounded-lg bg-slate-50 transition-all duration-300" id="downstream_container">
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm font-medium text-slate-700">Does the entity offer downstream correspondent banking services to other banks?</span>
+                            <div class="flex gap-4">
+                                <label class="flex items-center gap-2 cursor-pointer">
+                                    <input type="radio" name="downstream_cb" value="yes" onchange="toggleDownstreamDetails(true); saveProgress()" class="text-red-600 focus:ring-red-500">
+                                    <span class="text-xs text-slate-600">Yes</span>
+                                </label>
+                                <label class="flex items-center gap-2 cursor-pointer">
+                                    <input type="radio" name="downstream_cb" value="no" onchange="toggleDownstreamDetails(false); saveProgress()" class="text-green-600 focus:ring-green-500">
+                                    <span class="text-xs text-slate-600">No</span>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <!-- Dynamic Downstream Details -->
+                        <div id="downstream_details_container" class="hidden mt-2 pt-2 border-t border-slate-200">
+                            <label class="block text-xs font-bold text-slate-700 mb-1">Details of Downstream/Nested Relationships <span class="text-red-500">*</span></label>
+                            <textarea id="downstream_details" rows="3" oninput="saveProgress()" class="w-full border-slate-300 rounded-lg shadow-sm text-xs focus:ring-indigo-500 focus:border-indigo-500 p-2" placeholder="Describe the type of downstream relationships they process through Razorpay..."></textarea>
+                        </div>
+                    </div>
+
+                    <!-- Question 5 -->
+                    <div class="flex items-center justify-between p-3 border border-slate-100 rounded-lg bg-slate-50">
+                        <span class="text-sm font-medium text-slate-700">Does the entity maintain Payable Through Accounts (PTA) for its customers?</span>
+                        <div class="flex gap-4">
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="radio" name="pta_accounts" value="yes" onchange="checkRejectionTriggers(); saveProgress()" class="text-red-600 focus:ring-red-500">
+                                <span class="text-xs text-slate-600">Yes</span>
+                            </label>
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="radio" name="pta_accounts" value="no" onchange="checkRejectionTriggers(); saveProgress()" class="text-green-600 focus:ring-green-500">
+                                <span class="text-xs text-slate-600">No</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Question 6 -->
+                    <div class="flex items-center justify-between p-3 border border-slate-100 rounded-lg bg-slate-50">
+                        <span class="text-sm font-medium text-slate-700">Does the entity perform adverse media and sanctions screening on its customer base?</span>
+                        <div class="flex gap-4">
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="radio" name="adverse_media" value="yes" onchange="checkRejectionTriggers(); saveProgress()" class="text-green-600 focus:ring-green-500">
+                                <span class="text-xs text-slate-600">Yes</span>
+                            </label>
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="radio" name="adverse_media" value="no" onchange="checkRejectionTriggers(); saveProgress()" class="text-red-600 focus:ring-red-500">
+                                <span class="text-xs text-slate-600">No</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Question 7: Transaction Screening -->
+                    <div class="flex items-center justify-between p-3 border border-slate-100 rounded-lg bg-slate-50">
+                        <span class="text-sm font-medium text-slate-700">Does the entity screen all transactions against major sanctions lists (UN/OFAC/EU)?</span>
+                        <div class="flex gap-4">
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="radio" name="txn_screening" value="yes" onchange="checkRejectionTriggers(); saveProgress()" class="text-green-600 focus:ring-green-500">
+                                <span class="text-xs text-slate-600">Yes</span>
+                            </label>
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="radio" name="txn_screening" value="no" onchange="checkRejectionTriggers(); saveProgress()" class="text-red-600 focus:ring-red-500">
+                                <span class="text-xs text-slate-600">No</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Question 8: Ongoing Monitoring -->
+                    <div class="flex items-center justify-between p-3 border border-slate-100 rounded-lg bg-slate-50">
+                        <span class="text-sm font-medium text-slate-700">Does the entity conduct ongoing transaction monitoring for suspicious activity?</span>
+                        <div class="flex gap-4">
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="radio" name="ongoing_monitoring" value="yes" onchange="checkRejectionTriggers(); saveProgress()" class="text-green-600 focus:ring-green-500">
+                                <span class="text-xs text-slate-600">Yes</span>
+                            </label>
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="radio" name="ongoing_monitoring" value="no" onchange="checkRejectionTriggers(); saveProgress()" class="text-red-600 focus:ring-red-500">
+                                <span class="text-xs text-slate-600">No</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Question 9: KYC Refresh -->
+                    <div class="flex items-center justify-between p-3 border border-slate-100 rounded-lg bg-slate-50">
+                        <span class="text-sm font-medium text-slate-700">Does the entity perform periodic KYC refreshes/reviews on its high-risk clients?</span>
+                        <div class="flex gap-4">
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="radio" name="kyc_refresh" value="yes" onchange="checkRejectionTriggers(); saveProgress()" class="text-green-600 focus:ring-green-500">
+                                <span class="text-xs text-slate-600">Yes</span>
+                            </label>
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="radio" name="kyc_refresh" value="no" onchange="checkRejectionTriggers(); saveProgress()" class="text-red-600 focus:ring-red-500">
+                                <span class="text-xs text-slate-600">No</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Question 10: NFTF Clients -->
+                    <div class="flex flex-col gap-3 p-3 border border-slate-100 rounded-lg bg-slate-50 transition-all duration-300" id="nftf_container">
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm font-medium text-slate-700">Does the entity onboard clients on a Non-Face-to-Face (NFTF) basis?</span>
+                            <div class="flex gap-4">
+                                <label class="flex items-center gap-2 cursor-pointer">
+                                    <input type="radio" name="nftf_clients" value="yes" onchange="toggleNftfDetails(true); saveProgress()" class="text-red-600 focus:ring-red-500">
+                                    <span class="text-xs text-slate-600">Yes</span>
+                                </label>
+                                <label class="flex items-center gap-2 cursor-pointer">
+                                    <input type="radio" name="nftf_clients" value="no" onchange="toggleNftfDetails(false); saveProgress()" class="text-green-600 focus:ring-green-500">
+                                    <span class="text-xs text-slate-600">No</span>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <!-- Dynamic NFTF Details -->
+                        <div id="nftf_details_container" class="hidden mt-2 pt-2 border-t border-slate-200">
+                            <label class="block text-xs font-bold text-slate-700 mb-1">Details of NFTF Measures & Controls <span class="text-red-500">*</span></label>
+                            <textarea id="nftf_details" rows="3" oninput="saveProgress()" class="w-full border-slate-300 rounded-lg shadow-sm text-xs focus:ring-indigo-500 focus:border-indigo-500 p-2" placeholder="Describe the measures applied for NFTF customers (e.g. video verification, biometrics)..."></textarea>
+                        </div>
+                    </div>
+
+                    <!-- Question 11: EWRA -->
+                    <div class="flex items-center justify-between p-3 border border-slate-100 rounded-lg bg-slate-50">
+                        <span class="text-sm font-medium text-slate-700">Has the entity conducted an EWRA within the last two financial years?</span>
+                        <div class="flex gap-4">
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="radio" name="ewra_check" value="yes" onchange="checkRejectionTriggers(); saveProgress()" class="text-green-600 focus:ring-green-500">
+                                <span class="text-xs text-slate-600">Yes</span>
+                            </label>
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="radio" name="ewra_check" value="no" onchange="checkRejectionTriggers(); saveProgress()" class="text-red-600 focus:ring-red-500">
+                                <span class="text-xs text-slate-600">No</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Analyst Notes -->
+                    <div class="mt-4">
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Analyst Notes & Comments <span class="text-red-500">*</span></label>
+                        <textarea id="analyst_notes" rows="4" oninput="saveProgress()" class="w-full border-slate-300 rounded-lg shadow-sm text-xs focus:ring-indigo-500 focus:border-indigo-500 p-2" placeholder="Enter detailed assessment notes regarding the correspondent partner..."></textarea>
+                    </div>
+
+                    <!-- ALERT 1: BANNED FROM ONBOARDING (FATF/Shell/PTA) -->
+                    <div id="banned_entity_alert" class="hidden mt-6 p-4 bg-red-100 border-2 border-red-500 rounded-lg text-center animate-pulse">
+                        <h4 class="text-sm font-bold text-red-800 uppercase mb-1">
+                            <i class="fa-solid fa-ban mr-2"></i> ONBOARDING PROHIBITED
+                        </h4>
+                        <p class="text-xs font-bold text-red-700">
+                            ENTITY BANNED DUE TO FATF BLACK LIST, SHELL BANK NEXUS, OR PROHIBITED ACCOUNTS.
+                        </p>
+                    </div>
+
+                    <!-- ALERT 2: REJECTION RECOMMENDED (Lapses) -->
+                    <div id="aml_rejection_alert" class="hidden mt-6 p-4 bg-red-100 border-2 border-red-500 rounded-lg text-center animate-pulse">
+                        <h4 class="text-sm font-bold text-red-800 uppercase mb-1">
+                            <i class="fa-solid fa-triangle-exclamation mr-2"></i> REJECTION RECOMMENDED
+                        </h4>
+                        <p class="text-xs font-bold text-red-700">
+                            ENTITY HAS SERIOUS AML/CFT LAPSES.
+                        </p>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Sign Off -->
+            <div class="mt-6 border-t border-slate-200 pt-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-500 mb-1">Reviewed By (Compliance Officer)</label>
+                        <input type="text" id="officer_name" oninput="saveProgress()" class="w-full border-slate-300 rounded-lg shadow-sm text-xs focus:ring-indigo-500 focus:border-indigo-500 p-2" placeholder="Your Name">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-500 mb-1">Date</label>
+                        <input type="date" id="completion_date" oninput="saveProgress()" class="w-full border-slate-300 rounded-lg shadow-sm text-xs focus:ring-indigo-500 focus:border-indigo-500 p-2">
+                    </div>
+                </div>
+            </div>
+
+        </form>
+    </main>
+
+    <!-- Modal -->
+    <div id="notification-modal" class="fixed inset-0 z-50 flex items-center justify-center hidden bg-black bg-opacity-50 backdrop-blur-sm transition-opacity">
+        <div class="bg-white rounded-xl shadow-2xl p-6 w-full max-w-sm mx-4 text-center transform transition-all scale-100">
+            <div id="modal-icon" class="mb-4 text-4xl"></div>
+            <h3 id="modal-title" class="text-lg font-bold text-slate-900 mb-2"></h3>
+            <p id="modal-message" class="text-sm text-slate-600 mb-6"></p>
+            <button onclick="document.getElementById('notification-modal').classList.add('hidden')" class="w-full bg-slate-800 text-white py-2 rounded-lg font-medium hover:bg-slate-900 shadow-sm">Close</button>
+        </div>
+    </div>
+
+    <script>
+        // Set today's date
+        document.addEventListener('DOMContentLoaded', () => {
+             const today = new Date().toISOString().split('T')[0];
+             const dateInput = document.getElementById('completion_date');
+             if(dateInput && !dateInput.value) dateInput.value = today;
+             
+             // Initialize one signatory row if none exist
+             if(document.getElementById('signatory-container').children.length === 0) {
+                 addSignatoryRow();
+             }
+        });
+
+        // 1. DYNAMIC SIGNATORY ROWS
+        function addSignatoryRow() {
+            const container = document.getElementById('signatory-container');
+            const rowId = 'sig_row_' + Date.now();
+            
+            const template = `
+                <div class="grid grid-cols-1 md:grid-cols-12 gap-4 p-4 border border-slate-200 rounded-lg bg-slate-50 relative group" id="${rowId}">
+                    <button type="button" onclick="this.closest('.group').remove(); saveProgress();" class="absolute top-2 right-2 text-slate-400 hover:text-red-500"><i class="fa-solid fa-trash-can"></i></button>
+                    
+                    <div class="md:col-span-4">
+                        <label class="block text-xs font-medium text-slate-500 mb-1">Signatory Name</label>
+                        <input type="text" oninput="saveProgress()" class="sig-name w-full border-slate-300 rounded-md text-xs p-2" placeholder="Full Legal Name">
+                    </div>
+                    
+                    <div class="md:col-span-4 flex items-end">
+                        <label class="flex items-center space-x-3 p-2 w-full border border-slate-200 rounded-lg bg-white cursor-pointer hover:bg-slate-50 transition-colors">
+                            <input type="checkbox" onchange="saveProgress()" class="sig-check-id rounded text-indigo-600 focus:ring-indigo-500 w-4 h-4">
+                            <span class="text-xs font-medium text-slate-700">1. ID Document Verified</span>
+                        </label>
+                    </div>
+
+                    <div class="md:col-span-4 flex items-end">
+                        <label class="flex items-center space-x-3 p-2 w-full border border-slate-200 rounded-lg bg-white cursor-pointer hover:bg-slate-50 transition-colors">
+                            <input type="checkbox" onchange="saveProgress()" class="sig-check-poa rounded text-indigo-600 focus:ring-indigo-500 w-4 h-4">
+                            <span class="text-xs font-medium text-slate-700">2. Proof of Address Verified</span>
+                        </label>
+                    </div>
+                </div>
+            `;
+            container.insertAdjacentHTML('beforeend', template);
+        }
+
+        // 2. TOGGLE LOGIC FUNCTIONS
+        function toggleWolfsbergRisks(isYes) {
+            const container = document.getElementById('wolfsberg_risks');
+            const box = document.getElementById('wolfsberg_q_container');
+            
+            if (isYes) {
+                container.classList.remove('hidden');
+                box.classList.remove('border-slate-100', 'bg-slate-50');
+                box.classList.add('border-red-200', 'bg-red-50');
+            } else {
+                container.classList.add('hidden');
+                box.classList.add('border-slate-100', 'bg-slate-50');
+                box.classList.remove('border-red-200', 'bg-red-50');
+                
+                const checks = container.querySelectorAll('input[type="checkbox"]');
+                checks.forEach(c => c.checked = false);
+                document.getElementById('risk_details').value = "";
+            }
+        }
+
+        function toggleDownstreamDetails(isYes) {
+            const container = document.getElementById('downstream_details_container');
+            if (isYes) {
+                container.classList.remove('hidden');
+            } else {
+                container.classList.add('hidden');
+                document.getElementById('downstream_details').value = "";
+            }
+        }
+
+        function toggleNftfDetails(isYes) {
+            const container = document.getElementById('nftf_details_container');
+            if (isYes) {
+                container.classList.remove('hidden');
+            } else {
+                container.classList.add('hidden');
+                document.getElementById('nftf_details').value = "";
+            }
+        }
+
+        // 3. ERROR HANDLING
+        function highlightError(element) {
+            if (!element) return;
+            element.classList.add('input-error');
+            let parent = element.closest('div') || element.parentElement;
+            if (parent && !parent.querySelector('.error-icon')) {
+                const icon = document.createElement('i');
+                icon.className = 'fa-solid fa-circle-exclamation text-red-500 ml-2 error-icon';
+                const label = parent.querySelector('label');
+                if (label) label.appendChild(icon);
+                else parent.insertBefore(icon, element);
+            }
+
+            const clearError = () => {
+                element.classList.remove('input-error');
+                const existingIcon = parent.querySelector('.error-icon');
+                if (existingIcon) existingIcon.remove();
+                element.removeEventListener('input', clearError);
+                element.removeEventListener('change', clearError);
+            };
+            element.addEventListener('input', clearError);
+            element.addEventListener('change', clearError);
+        }
+
+        function showModal(title, msg, type) {
+            const modal = document.getElementById('notification-modal');
+            const icon = document.getElementById('modal-icon');
+            const t = document.getElementById('modal-title');
+            const m = document.getElementById('modal-message');
+            const titleEl = document.getElementById('modal-title');
+
+            titleEl.className = 'text-lg font-bold text-slate-900 mb-2';
+
+            if(type === 'error') {
+                icon.innerHTML = '<i class="fa-solid fa-circle-exclamation text-red-500"></i>';
+                titleEl.classList.add('text-red-600');
+            } else if (type === 'warning') {
+                icon.innerHTML = '<i class="fa-solid fa-triangle-exclamation text-orange-500"></i>';
+                titleEl.classList.add('text-orange-600');
+            } else {
+                icon.innerHTML = '<i class="fa-solid fa-circle-check text-green-500"></i>';
+            }
+            
+            t.innerText = title;
+            m.innerText = msg;
+            modal.classList.remove('hidden');
+        }
+
+        // NEW: Check for Rejection Triggers
+        function checkRejectionTriggers() {
+            // Get values
+            // 1. Shell Bank (No = Rejection)
+            const shellProhibit = document.querySelector('input[name="shell_bank_prohibition"]:checked')?.value;
+            // 2. PTA (Yes = Rejection)
+            const pta = document.querySelector('input[name="pta_accounts"]:checked')?.value;
+            // 3. Adverse Media (No = Rejection)
+            const advMedia = document.querySelector('input[name="adverse_media"]:checked')?.value;
+            // 4. Transaction Screening (No = Rejection)
+            const txnScreen = document.querySelector('input[name="txn_screening"]:checked')?.value;
+            // 5. Ongoing Monitoring (No = Rejection)
+            const monitor = document.querySelector('input[name="ongoing_monitoring"]:checked')?.value;
+            // 6. KYC Refresh (No = Rejection)
+            const refresh = document.querySelector('input[name="kyc_refresh"]:checked')?.value;
+            // 7. EWRA (No = Rejection)
+            const ewra = document.querySelector('input[name="ewra_check"]:checked')?.value;
+
+            const alertBox = document.getElementById('aml_rejection_alert');
+            
+            let isTriggered = false;
+            
+            if (shellProhibit === 'no') isTriggered = true;
+            if (pta === 'yes') isTriggered = true;
+            if (advMedia === 'no') isTriggered = true;
+            if (txnScreen === 'no') isTriggered = true;
+            if (monitor === 'no') isTriggered = true;
+            if (refresh === 'no') isTriggered = true;
+            if (ewra === 'no') isTriggered = true;
+
+            if (isTriggered) {
+                alertBox.classList.remove('hidden');
+            } else {
+                alertBox.classList.add('hidden');
+            }
+        }
+
+        // 4. VALIDATION
+        function validateForm() {
+            let isValid = true;
+            const missing = [];
+
+            // Header Info
+            const fiName = document.getElementById('fi_name');
+            if(!fiName.value.trim()) { highlightError(fiName); missing.push("Financial Institution Name"); isValid = false; }
+
+            // Part A
+            if(!document.getElementById('cert_inc').checked) { highlightError(document.getElementById('cert_inc').parentElement); missing.push("Certificate of Incorporation"); isValid = false; }
+            if(!document.getElementById('reg_license').checked) { highlightError(document.getElementById('reg_license').parentElement); missing.push("Regulatory License"); isValid = false; }
+            
+            const opAddr = document.getElementById('op_address');
+            const cInc = document.getElementById('country_inc');
+            const cOps = document.getElementById('country_ops');
+            if(!opAddr.value.trim()) { highlightError(opAddr); missing.push("Operating Address"); isValid = false; }
+            if(!cInc.value) { highlightError(cInc); missing.push("Country of Incorporation"); isValid = false; }
+            if(!cOps.value) { highlightError(cOps); missing.push("Country of Operation"); isValid = false; }
+
+            // FATF Validation: ONLY if visible
+            const fatfContainer = document.getElementById('fatf_spec_container');
+            const fatfList = document.getElementById('fatf_list_type');
+            if (!fatfContainer.classList.contains('hidden') && fatfList.value === "") {
+                highlightError(fatfList); missing.push("FATF List Classification"); isValid = false;
+            }
+
+            // Part B: Signatories (Updated Logic)
+            const sigContainer = document.getElementById('signatory-container');
+            const sigRows = sigContainer.querySelectorAll('.group');
+            if(sigRows.length === 0) { missing.push("At least one Signatory"); isValid = false; }
+            sigRows.forEach((row, i) => {
+                const name = row.querySelector('.sig-name');
+                const checkId = row.querySelector('.sig-check-id');
+                const checkPoa = row.querySelector('.sig-check-poa');
+                if(!name.value.trim()) { highlightError(name); missing.push(`Signatory Name (Row ${i+1})`); isValid = false; }
+                if(!checkId.checked) { highlightError(checkId.parentElement); missing.push(`Signatory ID (Row ${i+1})`); isValid = false; }
+                if(!checkPoa.checked) { highlightError(checkPoa.parentElement); missing.push(`Signatory Proof of Address (Row ${i+1})`); isValid = false; }
+            });
+
+            // Part C: CCO
+            const ccoName = document.getElementById('cco_name');
+            const ccoCv = document.getElementById('cco_cv_received');
+            if(!ccoName.value.trim()) { highlightError(ccoName); missing.push("CCO Name"); isValid = false; }
+            if(!ccoCv.checked) { highlightError(ccoCv.parentElement); missing.push("CCO Resume/CV"); isValid = false; }
+
+            // Part D: Policies
+            const wolf = document.getElementById('wolfsberg_received');
+            if(!wolf.checked) { highlightError(wolf.parentElement); missing.push("Wolfsberg CDDQ Verification"); isValid = false; }
+            const aml = document.getElementById('aml_policies_received');
+            if(!aml.checked) { highlightError(aml.parentElement); missing.push("AML Policies Verification"); isValid = false; }
+
+            const amlAuditContainer = document.getElementById('aml_audit_container');
+            if (!amlAuditContainer.classList.contains('hidden')) {
+                const auditCheck = document.getElementById('aml_audit_received');
+                const auditDate = document.getElementById('aml_audit_date');
+                if (!auditCheck.checked) { highlightError(auditCheck.parentElement); missing.push("AML Audit Received (Grey List)"); isValid = false; }
+                if (!auditDate.value.trim()) { highlightError(auditDate); missing.push("Date of AML Audit"); isValid = false; }
+            }
+
+            // Part E: Assessment
+            const negReply = document.querySelector('input[name="negative_reply"]:checked');
+            if (negReply && negReply.value === 'yes') {
+                const riskChecks = document.querySelectorAll('#wolfsberg_risks input[type="checkbox"]');
+                const riskDetails = document.getElementById('risk_details');
+                const isRiskChecked = Array.from(riskChecks).some(c => c.checked);
+                if (!isRiskChecked) { missing.push("Wolfsberg Risk Categories (Select at least one)"); isValid = false; }
+                if (!riskDetails.value.trim()) { highlightError(riskDetails); missing.push("Risk Details & Mitigants"); isValid = false; }
+            }
+
+            const shell = document.querySelector('input[name="shell_bank_prohibition"]:checked');
+            const physPres = document.querySelector('input[name="physical_presence"]:checked');
+            const downstream = document.querySelector('input[name="downstream_cb"]:checked');
+            
+            if (downstream && downstream.value === 'yes') {
+                const downstreamDetails = document.getElementById('downstream_details');
+                if (!downstreamDetails.value.trim()) { highlightError(downstreamDetails); missing.push("Downstream Relationship Details"); isValid = false; }
+            }
+
+            const pta = document.querySelector('input[name="pta_accounts"]:checked');
+            const media = document.querySelector('input[name="adverse_media"]:checked');
+            const txn = document.querySelector('input[name="txn_screening"]:checked');
+            const monitoring = document.querySelector('input[name="ongoing_monitoring"]:checked');
+            const kyc = document.querySelector('input[name="kyc_refresh"]:checked');
+            const nftf = document.querySelector('input[name="nftf_clients"]:checked');
+            
+            if (nftf && nftf.value === 'yes') {
+                const nftfDetails = document.getElementById('nftf_details');
+                if (!nftfDetails.value.trim()) { highlightError(nftfDetails); missing.push("NFTF Measures Details"); isValid = false; }
+            }
+
+            const ewra = document.querySelector('input[name="ewra_check"]:checked');
+            const notes = document.getElementById('analyst_notes');
+
+            if(!negReply) { missing.push("Negative Reply Assessment"); isValid = false; }
+            if(!shell) { missing.push("Shell Bank Prohibition Check"); isValid = false; }
+            if(!physPres) { missing.push("Physical Presence Check"); isValid = false; }
+            if(!downstream) { missing.push("Downstream CB Check"); isValid = false; }
+            if(!pta) { missing.push("PTA Assessment"); isValid = false; }
+            if(!media) { missing.push("Adverse Media Check"); isValid = false; }
+            if(!txn) { missing.push("Transaction Screening Check"); isValid = false; }
+            if(!monitoring) { missing.push("Ongoing Monitoring Check"); isValid = false; }
+            if(!kyc) { missing.push("KYC Refresh Check"); isValid = false; }
+            if(!nftf) { missing.push("NFTF Client Check"); isValid = false; }
+            if(!ewra) { missing.push("EWRA Check"); isValid = false; }
+            if(!notes.value.trim()) { highlightError(notes); missing.push("Analyst Notes & Comments"); isValid = false; }
+
+            const officer = document.getElementById('officer_name');
+            if(!officer.value.trim()) { highlightError(officer); missing.push("Compliance Officer Name"); isValid = false; }
+
+            if (!isValid) {
+                showModal('Incomplete Application', `Please complete:\n\n• ${missing.join('\n• ')}`, 'error');
+            }
+            return isValid;
+        }
+
+        // 5. PERSISTENCE
+        function saveProgress() {
+            const inputs = document.querySelectorAll('input, select, textarea');
+            const data = {};
+            inputs.forEach((el, i) => {
+                if(el.type === 'radio') {
+                    if(el.checked) data[el.name] = el.value;
+                } else if(el.type === 'checkbox') {
+                    data[el.id || 'chk_'+i] = el.checked;
+                } else {
+                    data[el.id || 'val_'+i] = el.value;
+                }
+            });
+            localStorage.setItem('rispl_cba_form', JSON.stringify(data));
+        }
+
+        function loadProgress() {
+            const data = JSON.parse(localStorage.getItem('rispl_cba_form'));
+            if(!data) return;
+            
+            const inputs = document.querySelectorAll('input:not([type="radio"]), select, textarea');
+            inputs.forEach((el, i) => {
+                const key = el.id || 'val_'+i; 
+                const chkKey = el.id || 'chk_'+i;
+                if(el.type === 'checkbox' && data[chkKey] !== undefined) el.checked = data[chkKey];
+                else if(data[key] !== undefined) el.value = data[key];
+            });
+
+            const radios = document.querySelectorAll('input[type="radio"]');
+            radios.forEach(r => {
+                if(data[r.name] === r.value) r.checked = true;
+            });
+
+            // Re-run geo logic
+            const cInc = document.getElementById('country_inc');
+            const cOps = document.getElementById('country_ops');
+            if (cInc && cOps) { 
+                const anyFatf = (cInc.value === "FATF Listed" || cOps.value === "FATF Listed");
+                const container = document.getElementById('fatf_spec_container');
+                if(anyFatf) {
+                    container.classList.remove('hidden');
+                    const fatfList = document.getElementById('fatf_list_type');
+                    if (fatfList && fatfList.value === "FATF Grey List") {
+                        document.getElementById('aml_audit_container').classList.remove('hidden');
+                    }
+                    if (fatfList && fatfList.value === "FATF Black List") {
+                        document.getElementById('banned_entity_alert').classList.remove('hidden');
+                    }
+                }
+                else container.classList.add('hidden');
+            }
+
+            // Re-run Wolfsberg Risk Logic
+            const negReply = document.querySelector('input[name="negative_reply"]:checked');
+            if(negReply && negReply.value === 'yes') {
+                toggleWolfsbergRisks(true);
+            }
+
+            // Re-run Downstream Logic
+            const downstream = document.querySelector('input[name="downstream_cb"]:checked');
+            if(downstream && downstream.value === 'yes') {
+                toggleDownstreamDetails(true);
+            }
+
+            // Re-run NFTF Logic
+            const nftf = document.querySelector('input[name="nftf_clients"]:checked');
+            if(nftf && nftf.value === 'yes') {
+                toggleNftfDetails(true);
+            }
+
+            // Re-run Rejection Triggers
+            checkRejectionTriggers();
+        }
+
+        function resetForm() {
+            if(confirm("Are you sure you want to clear all data? This cannot be undone.")) {
+                localStorage.removeItem('rispl_cba_form');
+                location.reload();
+            }
+        }
+
+        function populateDummyData() {
+            document.getElementById('fi_name').value = "Global Commerce Bank Ltd";
+            document.getElementById('app_ref').value = "GBL-2024-TEST";
+            document.getElementById('cert_inc').checked = true;
+            document.getElementById('reg_license').checked = true;
+            document.getElementById('op_address').value = "1 Raffles Place, Singapore";
+            document.getElementById('country_inc').value = "Singapore";
+            document.getElementById('country_ops').value = "Singapore";
+            
+            handleGeoChange(document.getElementById('country_inc')); 
+
+            if(document.getElementById('signatory-container').children.length === 0) addSignatoryRow();
+            const sigName = document.querySelector('.sig-name');
+            const sigCheckId = document.querySelector('.sig-check-id');
+            const sigCheckPoa = document.querySelector('.sig-check-poa');
+            if(sigName) sigName.value = "Jane Doe (CEO)";
+            if(sigCheckId) sigCheckId.checked = true;
+            if(sigCheckPoa) sigCheckPoa.checked = true;
+
+            document.getElementById('cco_name').value = "John Smith (CCO)";
+            document.getElementById('cco_cv_received').checked = true;
+            document.getElementById('wolfsberg_received').checked = true;
+            document.getElementById('aml_policies_received').checked = true;
+
+            document.querySelector('input[name="negative_reply"][value="no"]').checked = true;
+            toggleWolfsbergRisks(false); 
+
+            document.querySelector('input[name="shell_bank_prohibition"][value="yes"]').checked = true;
+            document.querySelector('input[name="physical_presence"][value="yes"]').checked = true;
+            document.querySelector('input[name="downstream_cb"][value="no"]').checked = true;
+            toggleDownstreamDetails(false);
+
+            document.querySelector('input[name="pta_accounts"][value="no"]').checked = true;
+            document.querySelector('input[name="adverse_media"][value="yes"]').checked = true;
+            document.querySelector('input[name="txn_screening"][value="yes"]').checked = true;
+            document.querySelector('input[name="ongoing_monitoring"][value="yes"]').checked = true;
+            document.querySelector('input[name="kyc_refresh"][value="yes"]').checked = true;
+            document.querySelector('input[name="nftf_clients"][value="no"]').checked = true;
+            document.querySelector('input[name="ewra_check"][value="yes"]').checked = true;
+            toggleNftfDetails(false);
+
+            document.getElementById('analyst_notes').value = "Standard onboarding procedure. No adverse media found on entity or signatories. Wolfsberg questionnaire satisfactory.";
+            document.getElementById('officer_name').value = "Compliance Admin";
+            
+            checkRejectionTriggers();
+            saveProgress();
+            showModal('Data Filled', 'Dummy data populated.', 'success');
+        }
+
+        function handleGeoChange(element) {
+            saveProgress();
+            if (element && element.value === "FATF Listed") {
+                window.open('https://www.fatf-gafi.org/en/countries/black-and-grey-lists.html', '_blank');
+                showModal('FATF Verification', 'Please verify FATF status.', 'warning');
+            }
+            
+            const inc = document.getElementById('country_inc').value;
+            const ops = document.getElementById('country_ops').value;
+            const anyFatf = (inc === "FATF Listed" || ops === "FATF Listed");
+            
+            const container = document.getElementById('fatf_spec_container');
+            const bannedAlert = document.getElementById('banned_entity_alert');
+            const auditContainer = document.getElementById('aml_audit_container');
+            
+            if(anyFatf) {
+                container.classList.remove('hidden');
+                handleFATFListChange(document.getElementById('fatf_list_type'));
+            } else {
+                container.classList.add('hidden');
+                bannedAlert.classList.add('hidden'); 
+                auditContainer.classList.add('hidden'); 
+                const fatfSelect = document.getElementById('fatf_list_type');
+                if(fatfSelect) fatfSelect.value = ""; 
+            }
+        }
+
+        function handleFATFListChange(element) {
+            const bannedAlert = document.getElementById('banned_entity_alert');
+            const auditContainer = document.getElementById('aml_audit_container');
+            
+            if (!element) return;
+
+            if (element.value === "FATF Black List") {
+                bannedAlert.classList.remove('hidden');
+                auditContainer.classList.add('hidden'); 
+            } else if (element.value === "FATF Grey List") {
+                bannedAlert.classList.add('hidden');
+                auditContainer.classList.remove('hidden'); 
+            } else {
+                bannedAlert.classList.add('hidden');
+                auditContainer.classList.add('hidden');
+            }
+            saveProgress();
+        }
+
+        // 6. EXPORT
+        async function exportToPDF() {
+            if (!validateForm()) return;
+
+            const btn = document.querySelector('button[onclick="exportToPDF()"]');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i>Generating...';
+            btn.disabled = true;
+
+            const name = document.getElementById('fi_name').value;
+            const element = document.getElementById('checklist-content');
+
+            // HEADER CLONE
+            const originalHeader = document.getElementById('main-nav');
+            const headerClone = originalHeader.cloneNode(true);
+            const actionsDiv = headerClone.querySelector('#header-actions');
+            if(actionsDiv) actionsDiv.remove();
+            element.insertBefore(headerClone, element.firstChild);
+
+            window.scrollTo(0, 0);
+            document.body.classList.add('compact-pdf');
+
+            let ipAddress = "IP Not Detected";
+            try {
+                const response = await fetch('https://api.ipify.org?format=json');
+                const data = await response.json();
+                ipAddress = data.ip;
+            } catch (error) { console.warn(error); }
+
+            const now = new Date().toLocaleString('en-SG', { 
+                day: '2-digit', month: 'short', year: 'numeric',
+                hour: '2-digit', minute: '2-digit', second: '2-digit',
+                timeZoneName: 'short'
+            });
+
+            const footer = document.createElement('div');
+            footer.innerHTML = `
+                <div class="mt-4 pt-2 border-t border-slate-400 text-center">
+                    <p class="text-[6px] font-bold text-slate-800 uppercase tracking-wider mb-0.5">Generated on behalf of Razorpay Singapore Pte Ltd</p>
+                    <p class="text-[5px] text-slate-500 font-medium uppercase mb-0.5">Strictly Confidential • For Internal Compliance Use Only</p>
+                    <div class="flex justify-center gap-3 text-[5px] text-slate-400 font-mono">
+                        <span>Timestamp: ${now}</span>
+                        <span>|</span>
+                        <span>Origin IP: ${ipAddress}</span>
+                    </div>
+                </div>
+            `;
+            element.appendChild(footer);
+
+            const opt = {
+                margin: 0.3,
+                filename: `CBA_${name.replace(/\s+/g,'_')}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2, useCORS: true, scrollY: 0, scrollX: 0 },
+                jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
+            };
+
+            html2pdf().set(opt).from(element).save().then(() => {
+                footer.remove();
+                headerClone.remove();
+                document.body.classList.remove('compact-pdf');
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }).catch(err => {
+                console.error(err);
+                footer.remove();
+                headerClone.remove();
+                document.body.classList.remove('compact-pdf');
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+                showModal('Export Error', 'Failed to generate PDF.', 'error');
+            });
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,862 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sub-Merchant Declaration Form</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <!-- html2pdf Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+        /* Error styling */
+        .input-error {
+            border-color: #ef4444 !important; /* Red-500 */
+            background-color: #fef2f2 !important; /* Red-50 */
+        }
+        .error-icon { animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(2px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Form Control Standardization */
+        .form-label {
+            display: block;
+            font-size: 0.75rem; /* text-xs */
+            line-height: 1rem;
+            font-weight: 700; /* font-bold */
+            text-transform: uppercase;
+            letter-spacing: 0.05em; /* tracking-wide */
+            color: #475569; /* text-slate-600 */
+            margin-bottom: 0.375rem; /* mb-1.5 */
+        }
+        
+        .form-input {
+            width: 100%;
+            font-size: 0.875rem; /* text-sm */
+            line-height: 1.25rem;
+            color: #0f172a; /* text-slate-900 */
+            padding-top: 0.625rem; /* py-2.5 */
+            padding-bottom: 0.625rem;
+            padding-left: 0.75rem; /* px-3 */
+            padding-right: 0.75rem;
+            border-radius: 0.5rem; /* rounded-lg */
+            border-width: 1px;
+            border-color: #cbd5e1; /* border-slate-300 */
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); /* shadow-sm */
+            transition: all 0.2s;
+        }
+        
+        .form-input:focus {
+            outline: 2px solid transparent;
+            outline-offset: 2px;
+            border-color: #6366f1; /* indigo-500 */
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2); /* ring-indigo-500 */
+        }
+
+        /* Table Styling */
+        .custom-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+        .custom-table th {
+            text-align: left;
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #475569;
+            padding: 0.75rem 1rem;
+            background-color: #f8fafc;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .custom-table td {
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid #f1f5f9;
+            vertical-align: top;
+        }
+        /* Mobile responsive table wrapper */
+        .table-wrapper {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        
+        /* Animation for new rows */
+        .animate-fade-in {
+            animation: fadeIn 0.4s ease-out forwards;
+        }
+
+        /* COMPACT MODE FOR PDF EXPORT */
+        .compact-pdf .p-6 { padding: 0.75rem !important; } 
+        .compact-pdf .gap-6 { gap: 0.75rem !important; } 
+        .compact-pdf .space-y-6 > :not([hidden]) ~ :not([hidden]) { --tw-space-y-reverse: 0; margin-top: 0.75rem !important; }
+        .compact-pdf .mb-6 { margin-bottom: 0.75rem !important; }
+        .compact-pdf .py-8 { padding-top: 1rem !important; padding-bottom: 1rem !important; }
+        .compact-pdf textarea { rows: 2 !important; height: auto !important; }
+        .compact-pdf .text-base { font-size: 0.875rem !important; } 
+        .compact-pdf .form-label { font-size: 0.65rem !important; margin-bottom: 0.1rem !important; } /* Smaller labels */
+        .compact-pdf .form-input { font-size: 0.75rem !important; padding: 0.3rem 0.5rem !important; } /* Smaller inputs */
+        .compact-pdf .custom-table th, .compact-pdf .custom-table td { padding: 0.4rem 0.5rem !important; } /* Tighter table */
+        .compact-pdf .border-t { padding-top: 0.75rem !important; margin-top: 0.75rem !important; }
+        
+        /* Hide action buttons in PDF */
+        .compact-pdf .no-print { display: none !important; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased" onload="loadProgress()">
+
+    <!-- Header -->
+    <nav class="bg-white border-b border-slate-200 sticky top-0 z-50 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex flex-wrap justify-between items-center py-4 gap-4">
+                <!-- Identity -->
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-indigo-600 rounded-lg flex items-center justify-center text-white shadow-lg shadow-indigo-200">
+                        <i class="fa-solid fa-shield-halved text-lg"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-lg font-bold text-slate-900 tracking-tight leading-tight">Sub-Merchant <span class="text-indigo-600">Declaration Form</span></h1>
+                        <p class="text-[10px] text-slate-500 font-bold uppercase tracking-widest leading-none">Razorpay Singapore</p>
+                    </div>
+                </div>
+
+                <!-- Actions -->
+                <div class="flex items-center gap-2 flex-grow justify-end flex-wrap no-print">
+                    <button onclick="resetForm()" class="bg-white text-slate-600 border border-slate-200 px-3 py-2 rounded-lg text-xs font-bold hover:bg-slate-50 hover:text-slate-800 transition-all whitespace-nowrap">
+                        <i class="fa-solid fa-rotate-right mr-1"></i>Reset
+                    </button>
+                    <button onclick="populateDummyData()" class="bg-emerald-50 text-emerald-700 border border-emerald-200 px-3 py-2 rounded-lg text-xs font-bold hover:bg-emerald-100 transition-all whitespace-nowrap">
+                        <i class="fa-solid fa-wand-magic-sparkles mr-1"></i>Test Data
+                    </button>
+                    <button onclick="exportToPDF()" class="bg-slate-900 text-white px-4 py-2 rounded-lg text-xs font-bold hover:bg-slate-800 transition-all shadow-lg shadow-slate-200 whitespace-nowrap">
+                        <i class="fa-solid fa-file-pdf mr-2"></i>Export PDF
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main id="checklist-content" class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative">
+
+        <!-- Razorpay Client Context -->
+        <div class="mb-6 bg-white p-6 rounded-xl border border-indigo-100 shadow-sm relative overflow-hidden group hover:border-indigo-300 transition-colors">
+            <div class="absolute top-0 left-0 w-1 h-full bg-indigo-500"></div>
+            <h2 class="text-sm font-bold text-indigo-900 uppercase tracking-wide mb-4 flex items-center gap-2">
+                <i class="fa-solid fa-link text-indigo-400"></i> Razorpay Client Linkage
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label class="form-label text-indigo-800/80">Razorpay Client Name</label>
+                    <input type="text" id="razorpay_client_name" oninput="saveProgress()" class="form-input bg-indigo-50/30 border-indigo-200 focus:border-indigo-500 focus:ring-indigo-500" placeholder="e.g. Platform Corp Pte Ltd">
+                </div>
+                <div>
+                    <label class="form-label text-indigo-800/80">Relationship ID / Ref</label>
+                    <input type="text" id="relationship_id" oninput="saveProgress()" class="form-input bg-indigo-50/30 border-indigo-200 focus:border-indigo-500 focus:ring-indigo-500" placeholder="e.g. RZ-CONN-2024-001">
+                </div>
+            </div>
+        </div>
+
+        <form id="connectedPartyForm" class="space-y-6" onchange="saveProgress()">
+
+            <!-- PART A: SUB-MERCHANT DECLARATION (DYNAMIC TABLE) -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="border-b border-slate-100 bg-slate-50/80 px-6 py-4 flex flex-wrap justify-between items-center gap-2">
+                    <div class="flex items-center gap-3">
+                        <div class="w-7 h-7 rounded-full bg-slate-800 text-white flex items-center justify-center font-bold text-sm shadow-md">1</div>
+                        <h3 class="text-base font-bold text-slate-800 tracking-tight">Sub-Merchant Declaration</h3>
+                    </div>
+                    <!-- Add Entry Button -->
+                    <button type="button" onclick="addSmRow()" class="no-print bg-indigo-50 text-indigo-700 px-3 py-1.5 rounded-md text-xs font-bold hover:bg-indigo-100 transition-colors">
+                        <i class="fa-solid fa-plus mr-1"></i>Add Entry
+                    </button>
+                </div>
+                
+                <div class="table-wrapper">
+                    <table class="custom-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 25%;">Name</th>
+                                <th style="width: 20%;">Industry</th>
+                                <th style="width: 20%;">Incorporation Country</th>
+                                <th style="width: 20%;">Operating Country</th>
+                                <th style="width: 15%;">
+                                    Regulated FI?
+                                    <div class="text-[9px] font-normal text-slate-400 normal-case leading-tight mt-1">
+                                        (Licensed by MAS/Central Bank)
+                                    </div>
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody id="sm-table-body">
+                            <!-- Rows generated via JS -->
+                        </tbody>
+                    </table>
+                </div>
+                <div class="px-6 py-2 bg-slate-50 border-t border-slate-100">
+                    <p class="text-[10px] text-slate-400 italic">* Please ensure exact legal name and country names are used.</p>
+                </div>
+            </div>
+
+            <!-- PART B: BUSINESS PROFILES (Dynamic) -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="border-b border-slate-100 bg-slate-50/80 px-6 py-4 flex justify-between items-center">
+                    <div class="flex items-center gap-3">
+                        <div class="w-7 h-7 rounded-full bg-slate-800 text-white flex items-center justify-center font-bold text-sm shadow-md">2</div>
+                        <h3 class="text-base font-bold text-slate-800 tracking-tight">Business Profiles</h3>
+                    </div>
+                    <button type="button" onclick="addBizProfile()" class="no-print bg-indigo-50 text-indigo-700 px-3 py-1.5 rounded-md text-xs font-bold hover:bg-indigo-100 transition-colors">
+                        <i class="fa-solid fa-plus mr-1"></i>Add Profile
+                    </button>
+                </div>
+                <div class="p-6 space-y-6">
+                    
+                    <!-- Dynamic Profiles Container -->
+                    <div id="biz-profiles-container" class="space-y-6">
+                        <!-- Profile cards injected here -->
+                    </div>
+
+                    <!-- Negative Declarations (Global) -->
+                    <div class="bg-orange-50/80 rounded-lg p-5 border border-orange-200 mt-4">
+                        <div class="flex items-center gap-2 mb-3">
+                            <i class="fa-solid fa-ban text-orange-600"></i>
+                            <label class="text-xs font-bold text-orange-800 uppercase tracking-wide">Prohibited & Restricted Industries (All Sub-Merchants)</label>
+                        </div>
+                        <p class="text-[11px] text-orange-700 mb-4 font-medium border-l-2 border-orange-300 pl-3">
+                            Confirm that <strong>ALL</strong> Connected Parties listed above do <strong>NOT</strong> deal in the following:
+                        </p>
+                        <div class="grid grid-cols-2 md:grid-cols-3 gap-y-2 gap-x-4">
+                            <!-- 1. Weapons -->
+                            <label class="flex items-start gap-2 cursor-pointer p-1.5 rounded hover:bg-orange-100/50 transition-colors">
+                                <input type="checkbox" id="nd_weapons" class="mt-0.5 w-3.5 h-3.5 rounded text-orange-600 focus:ring-orange-500 border-orange-300">
+                                <span class="text-[11px] font-semibold text-slate-700 leading-tight">Weapons/Dangerous Items</span>
+                            </label>
+                            <!-- 2. Drugs -->
+                            <label class="flex items-start gap-2 cursor-pointer p-1.5 rounded hover:bg-orange-100/50 transition-colors">
+                                <input type="checkbox" id="nd_drugs" class="mt-0.5 w-3.5 h-3.5 rounded text-orange-600 focus:ring-orange-500 border-orange-300">
+                                <span class="text-[11px] font-semibold text-slate-700 leading-tight">Illegal Drugs/Pharmaceuticals</span>
+                            </label>
+                            <!-- 3. Unverified Health -->
+                            <label class="flex items-start gap-2 cursor-pointer p-1.5 rounded hover:bg-orange-100/50 transition-colors">
+                                <input type="checkbox" id="nd_health" class="mt-0.5 w-3.5 h-3.5 rounded text-orange-600 focus:ring-orange-500 border-orange-300">
+                                <span class="text-[11px] font-semibold text-slate-700 leading-tight">Unverified/Unapproved Health Products/Medical Treatments</span>
+                            </label>
+                            
+                            <!-- 4. Counterfeit -->
+                            <label class="flex items-start gap-2 cursor-pointer p-1.5 rounded hover:bg-orange-100/50 transition-colors">
+                                <input type="checkbox" id="nd_counterfeit" class="mt-0.5 w-3.5 h-3.5 rounded text-orange-600 focus:ring-orange-500 border-orange-300">
+                                <span class="text-[11px] font-semibold text-slate-700 leading-tight">Counterfeit Digital/Physical Goods</span>
+                            </label>
+                            <!-- 5. Crypto -->
+                            <label class="flex items-start gap-2 cursor-pointer p-1.5 rounded hover:bg-orange-100/50 transition-colors">
+                                <input type="checkbox" id="nd_crypto" class="mt-0.5 w-3.5 h-3.5 rounded text-orange-600 focus:ring-orange-500 border-orange-300">
+                                <span class="text-[11px] font-semibold text-slate-700 leading-tight">Cryptocurrency/Digital Assets/Unlicensed Financial Schemes</span>
+                            </label>
+                            <!-- 6. Gambling -->
+                            <label class="flex items-start gap-2 cursor-pointer p-1.5 rounded hover:bg-orange-100/50 transition-colors">
+                                <input type="checkbox" id="nd_gambling" class="mt-0.5 w-3.5 h-3.5 rounded text-orange-600 focus:ring-orange-500 border-orange-300">
+                                <span class="text-[11px] font-semibold text-slate-700 leading-tight">Gambling/Betting</span>
+                            </label>
+
+                            <!-- 7. Adult -->
+                            <label class="flex items-start gap-2 cursor-pointer p-1.5 rounded hover:bg-orange-100/50 transition-colors">
+                                <input type="checkbox" id="nd_adult" class="mt-0.5 w-3.5 h-3.5 rounded text-orange-600 focus:ring-orange-500 border-orange-300">
+                                <span class="text-[11px] font-semibold text-slate-700 leading-tight">Adult Content/Services</span>
+                            </label>
+                            <!-- 8. Occult -->
+                            <label class="flex items-start gap-2 cursor-pointer p-1.5 rounded hover:bg-orange-100/50 transition-colors">
+                                <input type="checkbox" id="nd_occult" class="mt-0.5 w-3.5 h-3.5 rounded text-orange-600 focus:ring-orange-500 border-orange-300">
+                                <span class="text-[11px] font-semibold text-slate-700 leading-tight">Occult/Supernatural Services/Products</span>
+                            </label>
+                            <!-- 9. Telemarketing -->
+                            <label class="flex items-start gap-2 cursor-pointer p-1.5 rounded hover:bg-orange-100/50 transition-colors">
+                                <input type="checkbox" id="nd_spam" class="mt-0.5 w-3.5 h-3.5 rounded text-orange-600 focus:ring-orange-500 border-orange-300">
+                                <span class="text-[11px] font-semibold text-slate-700 leading-tight">Telemarketing/Spam Tools</span>
+                            </label>
+
+                            <!-- 10. Organs -->
+                            <label class="flex items-start gap-2 cursor-pointer p-1.5 rounded hover:bg-orange-100/50 transition-colors">
+                                <input type="checkbox" id="nd_organs" class="mt-0.5 w-3.5 h-3.5 rounded text-orange-600 focus:ring-orange-500 border-orange-300">
+                                <span class="text-[11px] font-semibold text-slate-700 leading-tight">Human Organs/Parts</span>
+                            </label>
+                            <!-- 11. Wildlife -->
+                            <label class="flex items-start gap-2 cursor-pointer p-1.5 rounded hover:bg-orange-100/50 transition-colors">
+                                <input type="checkbox" id="nd_wildlife" class="mt-0.5 w-3.5 h-3.5 rounded text-orange-600 focus:ring-orange-500 border-orange-300">
+                                <span class="text-[11px] font-semibold text-slate-700 leading-tight">Endangered Species/Unlicensed Trade</span>
+                            </label>
+                            <!-- 12. Documents -->
+                            <label class="flex items-start gap-2 cursor-pointer p-1.5 rounded hover:bg-orange-100/50 transition-colors">
+                                <input type="checkbox" id="nd_docs" class="mt-0.5 w-3.5 h-3.5 rounded text-orange-600 focus:ring-orange-500 border-orange-300">
+                                <span class="text-[11px] font-semibold text-slate-700 leading-tight">Unauthorized Documents/IDs</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PART C: ATTESTATION -->
+            <div class="bg-slate-900 rounded-xl shadow-lg border border-slate-700 overflow-hidden text-white relative">
+                <!-- Visual accent -->
+                <div class="absolute top-0 right-0 w-32 h-32 bg-indigo-600 rounded-full blur-3xl opacity-20 -mr-16 -mt-16"></div>
+                
+                <div class="p-8 relative z-10">
+                    <h3 class="text-base font-bold mb-6 flex items-center gap-2 text-white">
+                        <i class="fa-solid fa-file-signature text-indigo-400"></i> Attestation & Screening Consent
+                    </h3>
+                    
+                    <div class="space-y-4 mb-8 bg-slate-800/50 p-4 rounded-lg border border-slate-700">
+                        <label class="flex items-start gap-3 cursor-pointer group">
+                            <div class="relative flex items-center">
+                                <input type="checkbox" id="attest_accuracy" class="peer h-5 w-5 cursor-pointer appearance-none rounded border border-slate-500 bg-slate-700 checked:border-indigo-500 checked:bg-indigo-500 transition-all">
+                                <i class="fa-solid fa-check absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-xs text-white opacity-0 peer-checked:opacity-100 pointer-events-none"></i>
+                            </div>
+                            <span class="text-xs text-slate-300 leading-relaxed group-hover:text-slate-200 transition-colors">
+                                I hereby attest that the information provided is accurate. I consent to <strong>Sanctions and Adverse Media screening</strong> being conducted on the Entities listed above.
+                            </span>
+                        </label>
+                        <label class="flex items-start gap-3 cursor-pointer group">
+                            <div class="relative flex items-center">
+                                <input type="checkbox" id="attest_pep_ack" class="peer h-5 w-5 cursor-pointer appearance-none rounded border border-slate-500 bg-slate-700 checked:border-indigo-500 checked:bg-indigo-500 transition-all">
+                                <i class="fa-solid fa-check absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-xs text-white opacity-0 peer-checked:opacity-100 pointer-events-none"></i>
+                            </div>
+                            <span class="text-xs text-slate-300 leading-relaxed group-hover:text-slate-200 transition-colors">
+                                I understand that any PEPs associated with any Sub-Merchant(s) mentioned may be subject to additional screening or additional due diligence conducted if necessary.
+                            </span>
+                        </label>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8 border-t border-slate-700 pt-8">
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Attested By (Name)</label>
+                            <input type="text" id="attester_name" oninput="saveProgress()" class="w-full bg-slate-800 border-slate-600 rounded-lg shadow-inner text-sm text-white focus:ring-indigo-500 focus:border-indigo-500 p-3" placeholder="Enter full name">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Date</label>
+                            <input type="date" id="attestation_date" oninput="saveProgress()" class="w-full bg-slate-800 border-slate-600 rounded-lg shadow-inner text-sm text-white focus:ring-indigo-500 focus:border-indigo-500 p-3">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </form>
+    </main>
+
+    <!-- Modal -->
+    <div id="modal" class="fixed inset-0 z-[100] flex items-center justify-center hidden bg-slate-900/80 backdrop-blur-sm transition-opacity">
+        <div class="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-sm mx-4 text-center transform transition-all scale-100 border border-slate-100">
+            <div id="modal-icon" class="mb-4 text-4xl"></div>
+            <h3 id="modal-title" class="text-lg font-bold text-slate-900 mb-2"></h3>
+            <p id="modal-msg" class="text-sm text-slate-600 mb-8 leading-relaxed"></p>
+            <button onclick="document.getElementById('modal').classList.add('hidden')" class="w-full bg-slate-900 text-white py-3 rounded-xl font-bold hover:bg-slate-800 transition-all shadow-lg shadow-slate-200">Close</button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+             const today = new Date().toISOString().split('T')[0];
+             const dateInput = document.getElementById('attestation_date');
+             if(dateInput && !dateInput.value) dateInput.value = today;
+             
+             // Check if we need to init default rows
+             const savedData = localStorage.getItem('rispl_kyc_lite_v9');
+             if(!savedData) {
+                 addSmRow();
+                 addBizProfile();
+             }
+        });
+
+        // --- DYNAMIC SUB-MERCHANT ROWS (SECTION 1) ---
+        function addSmRow(data = null) {
+            const tbody = document.getElementById('sm-table-body');
+            const tr = document.createElement('tr');
+            tr.className = 'sm-row animate-fade-in group';
+            
+            const name = data ? data.name : '';
+            const ind = data ? data.industry : '';
+            const inc = data ? data.country_inc : '';
+            const ops = data ? data.country_ops : '';
+            const reg = data ? data.regulated : '';
+
+            tr.innerHTML = `
+                <td>
+                    <input type="text" name="sm_name[]" value="${name}" oninput="saveProgress()" class="form-input border-transparent bg-slate-50 focus:bg-white focus:border-indigo-500" placeholder="Legal Name">
+                </td>
+                <td>
+                    <input type="text" name="sm_industry[]" value="${ind}" oninput="saveProgress()" class="form-input border-transparent bg-slate-50 focus:bg-white focus:border-indigo-500" placeholder="e.g. Retail">
+                </td>
+                <td>
+                    <input type="text" name="sm_country_inc[]" value="${inc}" oninput="saveProgress()" class="form-input border-transparent bg-slate-50 focus:bg-white focus:border-indigo-500" placeholder="e.g. Singapore">
+                </td>
+                <td>
+                    <input type="text" name="sm_country_ops[]" value="${ops}" oninput="saveProgress()" class="form-input border-transparent bg-slate-50 focus:bg-white focus:border-indigo-500" placeholder="e.g. Malaysia">
+                </td>
+                <td class="relative">
+                    <div class="flex items-center gap-2">
+                        <select name="sm_regulated[]" onchange="saveProgress()" class="form-input border-transparent bg-slate-50 focus:bg-white focus:border-indigo-500 w-full">
+                            <option value="" disabled ${!reg ? 'selected' : ''}>Select...</option>
+                            <option value="Yes" ${reg === 'Yes' ? 'selected' : ''}>Yes</option>
+                            <option value="No" ${reg === 'No' ? 'selected' : ''}>No</option>
+                        </select>
+                        <button type="button" onclick="removeSmRow(this)" class="no-print text-slate-300 hover:text-red-500 transition-colors hidden group-hover:block absolute -right-6 top-1/2 -translate-y-1/2 p-2">
+                            <i class="fa-solid fa-trash-can"></i>
+                        </button>
+                    </div>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        }
+
+        function removeSmRow(btn) {
+            const row = btn.closest('tr');
+            const tbody = document.getElementById('sm-table-body');
+            if(tbody.children.length > 1) {
+                row.remove();
+                saveProgress();
+            } else {
+                row.querySelectorAll('input').forEach(i => i.value = '');
+                row.querySelector('select').value = '';
+                saveProgress();
+            }
+        }
+
+        // --- DYNAMIC BUSINESS PROFILES (SECTION 2) ---
+        function addBizProfile(data = null) {
+            const container = document.getElementById('biz-profiles-container');
+            const index = container.children.length; // Unique ID suffix if needed
+            const div = document.createElement('div');
+            div.className = 'biz-profile-card bg-slate-50 p-5 rounded-lg border border-slate-200 relative group animate-fade-in';
+            
+            const entityName = data ? data.name : '';
+            const website = data ? data.website : '';
+            const pepStatus = data ? data.pep_status : '';
+            const desc = data ? data.desc : '';
+            const pepDetails = data && data.pep_details ? data.pep_details : { name: '', role: '', remarks: '' };
+
+            div.innerHTML = `
+                <button type="button" onclick="this.closest('.biz-profile-card').remove(); saveProgress();" class="absolute top-3 right-3 text-slate-300 hover:text-red-500 no-print transition-colors">
+                    <i class="fa-solid fa-trash-can"></i>
+                </button>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
+                    <div class="md:col-span-1">
+                        <label class="form-label">Entity Name</label>
+                        <input type="text" name="bp_entity_name[]" value="${entityName}" oninput="saveProgress()" class="form-input bg-white" placeholder="Match Section 1 Name">
+                    </div>
+                    <div class="md:col-span-1">
+                        <label class="form-label">Website / Platform URL</label>
+                        <input type="text" name="bp_website[]" value="${website}" oninput="saveProgress()" class="form-input bg-white" placeholder="https://">
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                     <label class="form-label text-slate-700">PEP Validation</label>
+                     <div class="bg-white p-3 rounded border border-slate-200">
+                        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                            <div class="text-xs text-slate-500 max-w-md">
+                                Are any of the UBOs/Directors of the Sub Merchant a <strong>PEP</strong> (Politically Exposed Person)?
+                            </div>
+                            <div class="flex items-center gap-6">
+                                <label class="flex items-center gap-2 cursor-pointer">
+                                    <input type="radio" name="pep_status_${index}" value="Yes" onchange="togglePepDetails(this); saveProgress()" class="w-4 h-4 text-indigo-600 focus:ring-indigo-500 border-slate-300" ${pepStatus === 'Yes' ? 'checked' : ''}>
+                                    <span class="text-sm font-semibold text-slate-700">Yes</span>
+                                </label>
+                                <label class="flex items-center gap-2 cursor-pointer">
+                                    <input type="radio" name="pep_status_${index}" value="No" onchange="togglePepDetails(this); saveProgress()" class="w-4 h-4 text-indigo-600 focus:ring-indigo-500 border-slate-300" ${pepStatus === 'No' ? 'checked' : ''}>
+                                    <span class="text-sm font-semibold text-slate-700">No</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Dynamic PEP Details -->
+                        <div class="pep-details-container mt-4 border-t border-slate-100 pt-3 ${pepStatus === 'Yes' ? '' : 'hidden'}">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="form-label text-indigo-600">PEP Name</label>
+                                    <input type="text" name="bp_pep_name[]" value="${pepDetails.name}" oninput="saveProgress()" class="form-input bg-indigo-50/20 border-indigo-200" placeholder="Full Name of PEP">
+                                </div>
+                                <div>
+                                    <label class="form-label text-indigo-600">Role</label>
+                                    <select name="bp_pep_role[]" onchange="saveProgress()" class="form-input bg-indigo-50/20 border-indigo-200">
+                                        <option value="" disabled ${!pepDetails.role ? 'selected' : ''}>Select Role...</option>
+                                        <option value="UBO" ${pepDetails.role === 'UBO' ? 'selected' : ''}>UBO</option>
+                                        <option value="Director" ${pepDetails.role === 'Director' ? 'selected' : ''}>Director</option>
+                                    </select>
+                                </div>
+                                <div class="md:col-span-2">
+                                    <label class="form-label text-indigo-600">Remarks</label>
+                                    <input type="text" name="bp_pep_remarks[]" value="${pepDetails.remarks}" oninput="saveProgress()" class="form-input bg-indigo-50/20 border-indigo-200" placeholder="Brief description of political association...">
+                                </div>
+                            </div>
+                        </div>
+                     </div>
+                </div>
+
+                <div>
+                    <label class="form-label">Business Description</label>
+                    <textarea name="bp_desc[]" rows="2" oninput="saveProgress()" class="form-input bg-white resize-none" placeholder="Goods/services provided...">${desc}</textarea>
+                </div>
+            `;
+            container.appendChild(div);
+        }
+
+        function togglePepDetails(radio) {
+            const card = radio.closest('.biz-profile-card');
+            const details = card.querySelector('.pep-details-container');
+            if (radio.value === 'Yes') {
+                details.classList.remove('hidden');
+                details.classList.add('animate-fade-in');
+            } else {
+                details.classList.add('hidden');
+                // Optional: Clear values on hide
+                // details.querySelectorAll('input, select').forEach(i => i.value = '');
+            }
+        }
+
+        // --- VALIDATION & ERROR HANDLING ---
+
+        function highlightError(element) {
+            if (!element) return;
+            element.classList.add('input-error');
+            element.classList.add('ring-2', 'ring-red-200');
+            
+            let parent = element.closest('td') || element.closest('div') || element.parentElement;
+            
+            if (parent && !parent.querySelector('.error-icon')) {
+                const icon = document.createElement('i');
+                icon.className = 'fa-solid fa-circle-exclamation text-red-500 ml-2 error-icon';
+                const label = parent.querySelector('label') || parent.querySelector('.form-label');
+                if (label) label.appendChild(icon);
+            }
+
+            const clearError = () => {
+                element.classList.remove('input-error', 'ring-2', 'ring-red-200');
+                const existingIcon = parent.querySelector('.error-icon');
+                if (existingIcon) existingIcon.remove();
+                element.removeEventListener('input', clearError);
+                element.removeEventListener('change', clearError);
+            };
+
+            element.addEventListener('input', clearError);
+            element.addEventListener('change', clearError);
+        }
+
+        function validateForm() {
+            let isValid = true;
+            const missing = [];
+
+            const checkId = (id, name) => {
+                const el = document.getElementById(id);
+                if (!el || !el.value.trim()) {
+                    highlightError(el);
+                    missing.push(name);
+                    isValid = false;
+                }
+            };
+
+            checkId('razorpay_client_name', "Razorpay Client Name");
+            checkId('relationship_id', "Relationship ID");
+            checkId('attester_name', "Attester Name");
+            
+            // --- Validating Dynamic Sub-Merchant Table ---
+            const smRows = document.querySelectorAll('.sm-row');
+            let hasOneCompleteRow = false;
+
+            smRows.forEach((row, index) => {
+                const inputs = row.querySelectorAll('input, select');
+                let filledCount = 0;
+                let totalInputs = inputs.length;
+                inputs.forEach(input => { if(input.value.trim()) filledCount++; });
+
+                if (filledCount > 0 && filledCount < totalInputs) {
+                    missing.push(`Incomplete Entry in Sub-Merchant Row ${index + 1}`);
+                    isValid = false;
+                    inputs.forEach(input => { if(!input.value.trim()) highlightError(input); });
+                }
+                if (filledCount === totalInputs) hasOneCompleteRow = true;
+            });
+
+            if (!hasOneCompleteRow) {
+                missing.push("At least one complete Sub-Merchant entry");
+                isValid = false;
+                if(smRows.length > 0) {
+                     const firstInputs = smRows[0].querySelectorAll('input, select');
+                     firstInputs.forEach(i => highlightError(i));
+                }
+            }
+
+            // --- Validating Business Profiles ---
+            const bpCards = document.querySelectorAll('.biz-profile-card');
+            if (bpCards.length === 0) {
+                missing.push("At least one Business Profile");
+                isValid = false;
+            } else {
+                bpCards.forEach((card, index) => {
+                    const name = card.querySelector('[name="bp_entity_name[]"]');
+                    const url = card.querySelector('[name="bp_website[]"]');
+                    const desc = card.querySelector('[name="bp_desc[]"]');
+                    // Find PEP radio
+                    const radios = card.querySelectorAll('input[type="radio"]');
+                    let pepStatus = '';
+                    radios.forEach(r => { if(r.checked) pepStatus = r.value; });
+
+                    if(!name.value.trim()) { highlightError(name); missing.push(`Profile ${index+1}: Entity Name`); isValid = false; }
+                    if(!url.value.trim()) { highlightError(url); missing.push(`Profile ${index+1}: Website`); isValid = false; }
+                    if(!desc.value.trim()) { highlightError(desc); missing.push(`Profile ${index+1}: Description`); isValid = false; }
+                    
+                    if(!pepStatus) { 
+                        // Highlight container of radios
+                        radios[0].closest('.bg-white').classList.add('ring-2', 'ring-red-200');
+                        missing.push(`Profile ${index+1}: PEP Validation Status`); 
+                        isValid = false; 
+                    } else if (pepStatus === 'Yes') {
+                        // Check PEP Details
+                        const pepName = card.querySelector('[name="bp_pep_name[]"]');
+                        const pepRole = card.querySelector('[name="bp_pep_role[]"]');
+                        const pepRemarks = card.querySelector('[name="bp_pep_remarks[]"]');
+                        
+                        if(!pepName.value.trim()) { highlightError(pepName); missing.push(`Profile ${index+1}: PEP Name`); isValid = false; }
+                        if(!pepRole.value) { highlightError(pepRole); missing.push(`Profile ${index+1}: PEP Role`); isValid = false; }
+                        if(!pepRemarks.value.trim()) { highlightError(pepRemarks); missing.push(`Profile ${index+1}: PEP Remarks`); isValid = false; }
+                    }
+                });
+            }
+
+            // Attestations
+            const checkChk = (id, name) => {
+                const el = document.getElementById(id);
+                if (!el.checked) {
+                    highlightError(el.parentElement); 
+                    el.nextElementSibling.classList.add('text-red-500');
+                    missing.push(name);
+                    isValid = false;
+                    
+                    el.addEventListener('change', function() {
+                        this.nextElementSibling.classList.remove('text-red-500');
+                    }, {once:true});
+                }
+            };
+            checkChk('attest_accuracy', "Accuracy Attestation");
+            checkChk('attest_pep_ack', "PEP EDD Acknowledgement");
+
+            // Negative Declarations Check
+            const negIds = ['nd_weapons', 'nd_drugs', 'nd_health', 'nd_counterfeit', 'nd_crypto', 'nd_gambling', 'nd_adult', 'nd_occult', 'nd_spam', 'nd_organs', 'nd_wildlife', 'nd_docs'];
+            let allNegChecked = true;
+            negIds.forEach(id => {
+                if(!document.getElementById(id).checked) allNegChecked = false;
+            });
+            
+            if(!allNegChecked) {
+                 missing.push("All Negative Declarations (Must confirm NOT involved)");
+                 isValid = false;
+                 const box = document.querySelector('.bg-orange-50\\/80');
+                 box.classList.add('ring-2', 'ring-red-400');
+                 box.addEventListener('click', () => box.classList.remove('ring-2', 'ring-red-400'), {once:true});
+            }
+
+            if (!isValid) {
+                showModal('Incomplete Form', `Please complete the following:\n\n• ${missing.join('\n• ')}`, 'error');
+            }
+
+            return isValid;
+        }
+
+        // --- PERSISTENCE ---
+
+        function saveProgress() {
+            const data = {};
+            // Static Inputs
+            const ids = ['razorpay_client_name', 'relationship_id', 'attester_name', 'attestation_date'];
+            ids.forEach(id => {
+                const el = document.getElementById(id);
+                if(el) data[id] = el.value;
+            });
+
+            // Checkboxes
+            const chks = ['attest_accuracy', 'attest_pep_ack', 
+                          'nd_weapons', 'nd_drugs', 'nd_health', 'nd_counterfeit', 'nd_crypto', 'nd_gambling', 
+                          'nd_adult', 'nd_occult', 'nd_spam', 'nd_organs', 'nd_wildlife', 'nd_docs'];
+            chks.forEach(id => {
+                const el = document.getElementById(id);
+                if(el) data[id] = el.checked;
+            });
+            
+            // Dynamic Sub-Merchant Data
+            const smRows = document.querySelectorAll('.sm-row');
+            const smData = Array.from(smRows).map(row => ({
+                name: row.querySelector('[name="sm_name[]"]').value,
+                industry: row.querySelector('[name="sm_industry[]"]').value,
+                country_inc: row.querySelector('[name="sm_country_inc[]"]').value,
+                country_ops: row.querySelector('[name="sm_country_ops[]"]').value,
+                regulated: row.querySelector('[name="sm_regulated[]"]').value
+            }));
+            data.sub_merchants = smData;
+
+            // Dynamic Business Profiles with PEP Data
+            const bpCards = document.querySelectorAll('.biz-profile-card');
+            const bpData = Array.from(bpCards).map(card => {
+                let pepVal = '';
+                const radios = card.querySelectorAll('input[type="radio"]');
+                radios.forEach(r => { if(r.checked) pepVal = r.value; });
+                
+                const pepDetails = {
+                    name: card.querySelector('[name="bp_pep_name[]"]').value,
+                    role: card.querySelector('[name="bp_pep_role[]"]').value,
+                    remarks: card.querySelector('[name="bp_pep_remarks[]"]').value
+                };
+
+                return {
+                    name: card.querySelector('[name="bp_entity_name[]"]').value,
+                    website: card.querySelector('[name="bp_website[]"]').value,
+                    desc: card.querySelector('[name="bp_desc[]"]').value,
+                    pep_status: pepVal,
+                    pep_details: pepDetails
+                };
+            });
+            data.business_profiles = bpData;
+
+            localStorage.setItem('rispl_kyc_lite_v9', JSON.stringify(data));
+        }
+
+        function loadProgress() {
+            const raw = localStorage.getItem('rispl_kyc_lite_v9');
+            if(!raw) return;
+            const data = JSON.parse(raw);
+
+            // Restore Static
+            for (const [key, val] of Object.entries(data)) {
+                if(key === 'sub_merchants' || key === 'business_profiles') continue;
+                const el = document.getElementById(key);
+                if(el) {
+                    if(el.type === 'checkbox') el.checked = val;
+                    else el.value = val;
+                }
+            }
+            
+            // Restore Sub-Merchants
+            if(data.sub_merchants && data.sub_merchants.length > 0) {
+                const tbody = document.getElementById('sm-table-body');
+                tbody.innerHTML = '';
+                data.sub_merchants.forEach(sm => addSmRow(sm));
+            }
+
+            // Restore Business Profiles
+            if(data.business_profiles && data.business_profiles.length > 0) {
+                const container = document.getElementById('biz-profiles-container');
+                container.innerHTML = '';
+                data.business_profiles.forEach(bp => addBizProfile(bp));
+            }
+        }
+
+        function resetForm() {
+            if(confirm("Clear all data?")) {
+                localStorage.removeItem('rispl_kyc_lite_v9');
+                location.reload();
+            }
+        }
+
+        function populateDummyData() {
+            document.getElementById('razorpay_client_name').value = "MegaPlatform Pte Ltd";
+            document.getElementById('relationship_id').value = "RZ-CONN-8821";
+            
+            // Populate One SM Row
+            const tbody = document.getElementById('sm-table-body');
+            tbody.innerHTML = '';
+            addSmRow({
+                name: "Little Shop of Wonders",
+                industry: "Retail / E-commerce",
+                country_inc: "Singapore",
+                country_ops: "Malaysia",
+                regulated: "No"
+            });
+
+            // Populate One Business Profile
+            const container = document.getElementById('biz-profiles-container');
+            container.innerHTML = '';
+            addBizProfile({
+                name: "Little Shop of Wonders",
+                website: "https://littleshop.sg",
+                pep_status: "No",
+                desc: "Online retailer of handcrafted widgets."
+            });
+
+            document.getElementById('attester_name').value = "John Doe (Compliance)";
+            
+            // Declarations
+            ['attest_accuracy','attest_pep_ack',
+             'nd_weapons', 'nd_drugs', 'nd_health', 'nd_counterfeit', 'nd_crypto', 'nd_gambling', 
+             'nd_adult', 'nd_occult', 'nd_spam', 'nd_organs', 'nd_wildlife', 'nd_docs'
+            ].forEach(id => document.getElementById(id).checked = true);
+
+            saveProgress();
+            showModal('Data Filled', 'Dummy data populated.', 'success');
+        }
+
+        function showModal(title, msg, type) {
+            const modal = document.getElementById('modal');
+            const icon = document.getElementById('modal-icon');
+            const t = document.getElementById('modal-title');
+            const m = document.getElementById('modal-msg');
+            
+            t.className = 'text-lg font-bold text-slate-900 mb-2';
+            if(type === 'error') {
+                icon.innerHTML = '<i class="fa-solid fa-circle-exclamation text-rose-500"></i>';
+                t.classList.add('text-rose-600');
+            } else if (type === 'warning') {
+                icon.innerHTML = '<i class="fa-solid fa-triangle-exclamation text-amber-500"></i>';
+                t.classList.add('text-amber-600');
+            } else {
+                icon.innerHTML = '<i class="fa-solid fa-circle-check text-emerald-500"></i>';
+            }
+            t.innerText = title;
+            m.innerText = msg;
+            modal.classList.remove('hidden');
+        }
+
+        async function exportToPDF() {
+            if (!validateForm()) return;
+            const btn = document.querySelector('button[onclick="exportToPDF()"]');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i>Generating...';
+            btn.disabled = true;
+
+            const firstRowName = document.querySelector('[name="sm_name[]"]')?.value || 'Unknown';
+            const element = document.getElementById('checklist-content');
+            window.scrollTo(0, 0);
+            document.body.classList.add('compact-pdf');
+            
+            const now = new Date().toLocaleString('en-SG');
+            const footer = document.createElement('div');
+            footer.innerHTML = `
+                <div class="mt-4 pt-2 border-t-2 border-slate-800 text-center">
+                    <p class="text-[10px] font-bold text-slate-800 uppercase">Razorpay Singapore • Sub-Merchant Declaration Form</p>
+                    <div class="text-[8px] text-slate-400 font-mono">Generated: ${now} | Ref: ${document.getElementById('relationship_id').value}</div>
+                </div>`;
+            element.appendChild(footer);
+
+            const opt = {
+                margin: 0.2,
+                filename: `SubMerchant_Declaration_${firstRowName.replace(/\s+/g,'_')}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2, useCORS: true, scrollY: 0 },
+                jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
+            };
+
+            html2pdf().set(opt).from(element).save().then(() => {
+                footer.remove();
+                document.body.classList.remove('compact-pdf');
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            });
+        }
+    </script>
+</body>
+</html>

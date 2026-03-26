@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Product Classification & Trade Compliance Questionnaire</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <!-- html2pdf Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+        /* Error styling */
+        .input-error {
+            border-color: #ef4444 !important; /* Red-500 */
+            background-color: #fef2f2 !important; /* Red-50 */
+        }
+        .error-icon { animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(2px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* COMPACT MODE FOR PDF EXPORT */
+        .compact-pdf .p-6 { padding: 0.75rem !important; }
+        .compact-pdf .gap-6 { gap: 0.75rem !important; }
+        .compact-pdf .space-y-6 > :not([hidden]) ~ :not([hidden]) { --tw-space-y-reverse: 0; margin-top: 0.75rem !important; }
+        .compact-pdf .mb-6 { margin-bottom: 0.75rem !important; }
+        .compact-pdf .py-8 { padding-top: 1rem !important; padding-bottom: 1rem !important; }
+        .compact-pdf textarea { height: auto !important; }
+        .compact-pdf .text-base { font-size: 0.875rem !important; }
+        .compact-pdf .text-sm { font-size: 0.75rem !important; }
+        .compact-pdf .text-xs { font-size: 0.7rem !important; }
+        .compact-pdf .border-t { padding-top: 0.75rem !important; margin-top: 0.75rem !important; }
+        
+        /* Specific tweaks for long lists in PDF */
+        .compact-pdf ul { margin-top: 0.25rem !important; margin-bottom: 0.25rem !important; }
+        .compact-pdf li { margin-bottom: 0.25rem !important; }
+
+        /* --- PDF EXPORT FIXES FOR VISIBILITY & CLIPPING --- */
+        /* 1. Force black text on inputs */
+        .compact-pdf input, 
+        .compact-pdf textarea, 
+        .compact-pdf select { 
+            color: #000000 !important; 
+            -webkit-text-fill-color: #000000 !important;
+            opacity: 1 !important; 
+        }
+        
+        /* 2. Kill all animations during export to prevent "fading" freeze-frames */
+        .compact-pdf * { 
+            animation: none !important; 
+            transition: none !important; 
+            opacity: 1 !important;
+        }
+
+        /* 3. Ensure hidden elements that became visible are fully opaque */
+        .compact-pdf #sector_details, 
+        .compact-pdf #eccn_input_container,
+        .compact-pdf #section_eccn {
+            display: block !important; /* Ensure block display if visible */
+        }
+
+        /* 4. CRITICAL FIX: Allow content to flow across pages (prevent clipping) */
+        .compact-pdf .overflow-hidden {
+            overflow: visible !important;
+            border-radius: 0 !important; /* Optional: remove rounding on PDF to look cleaner at breaks */
+        }
+        
+        /* 5. Improve page break behavior inside sections */
+        .compact-pdf .bg-white {
+            page-break-inside: auto !important;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased" onload="loadProgress()">
+
+    <!-- Header -->
+    <nav class="bg-white border-b border-slate-200 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex flex-wrap justify-between items-center py-4 gap-4">
+                <!-- Identity -->
+                <div>
+                    <h1 class="text-lg font-bold text-slate-900 tracking-tight leading-tight">Product Classification <span class="text-indigo-600">& Trade Compliance</span></h1>
+                    <p class="text-[10px] text-slate-500 font-medium uppercase tracking-wider leading-none">Razorpay Singapore</p>
+                </div>
+
+                <!-- Actions -->
+                <div class="flex items-center gap-2 flex-grow justify-end flex-wrap">
+                    <button onclick="resetForm()" class="bg-red-50 text-red-600 border border-red-100 px-3 py-1.5 rounded-md text-xs font-bold hover:bg-red-100 transition-colors whitespace-nowrap">
+                        <i class="fa-solid fa-rotate-right mr-1"></i>Reset
+                    </button>
+                    <button onclick="populateDummyData()" class="bg-green-50 text-green-700 border border-green-100 px-3 py-1.5 rounded-md text-xs font-bold hover:bg-green-100 transition-colors whitespace-nowrap">
+                        <i class="fa-solid fa-wand-magic-sparkles mr-1"></i>Test
+                    </button>
+                    <button onclick="exportToPDF()" class="bg-slate-800 text-white px-3 py-1.5 rounded-md text-xs font-medium hover:bg-slate-900 transition-colors shadow-sm whitespace-nowrap">
+                        <i class="fa-solid fa-file-pdf mr-2"></i>Export PDF
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main id="checklist-content" class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative">
+
+        <form id="tradeComplianceForm" class="space-y-6" onchange="saveProgress()">
+
+            <!-- SECTION 1: DECLARATION -->
+            <div class="bg-indigo-50 p-6 rounded-xl border border-indigo-100">
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="w-8 h-8 rounded-full bg-indigo-800 text-white flex items-center justify-center font-bold text-sm">1</div>
+                    <h2 class="text-sm font-bold text-indigo-900 uppercase tracking-wide">Declaration</h2>
+                </div>
+                
+                <div class="pl-11">
+                    <label class="block text-sm font-bold text-indigo-900 mb-3">Is your entity a direct importer or exporter of goods?</label>
+                    <div class="flex gap-4">
+                        <label class="flex-1 flex items-center justify-center gap-2 p-3 bg-white border border-indigo-200 rounded-lg cursor-pointer hover:bg-indigo-50 has-[:checked]:bg-indigo-600 has-[:checked]:border-indigo-600 has-[:checked]:text-white transition-all shadow-sm">
+                            <input type="radio" name="entity_importer_check" value="YES" class="text-indigo-600 hidden" onclick="toggleECCNSection(true)">
+                            <span class="text-sm font-bold"><i class="fa-solid fa-check mr-2"></i>YES</span>
+                        </label>
+                        <label class="flex-1 flex items-center justify-center gap-2 p-3 bg-white border border-slate-200 rounded-lg cursor-pointer hover:bg-slate-50 has-[:checked]:bg-slate-600 has-[:checked]:border-slate-600 has-[:checked]:text-white transition-all shadow-sm">
+                            <input type="radio" name="entity_importer_check" value="NO" class="text-slate-600 hidden" onclick="toggleECCNSection(false)">
+                            <span class="text-sm font-bold"><i class="fa-solid fa-xmark mr-2"></i>NO</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION 2: ECCN (Hidden by Default) -->
+            <div id="section_eccn" class="hidden bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden animate-[fadeIn_0.5s_ease-in-out]">
+                <div class="border-b border-slate-100 bg-slate-50/50 px-6 py-4">
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-full bg-slate-800 text-white flex items-center justify-center font-bold text-sm">2</div>
+                        <h3 class="text-base font-semibold text-slate-800">Export Control Classification (ECCN)</h3>
+                    </div>
+                </div>
+                <div class="p-6">
+                    <label class="block text-sm font-medium text-slate-700 mb-3">Has the manufacturer provided an Export Control Classification Number (ECCN) for the item(s) imported or exported?</label>
+                    
+                    <div class="space-y-3">
+                        <label class="flex items-center gap-3 cursor-pointer p-3 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors">
+                            <input type="radio" name="eccn_status" value="YES" class="text-indigo-600 focus:ring-indigo-500" onclick="toggleECCNInput(true)">
+                            <span class="text-xs font-medium text-slate-700">YES, an ECCN was provided.</span>
+                        </label>
+                        
+                        <!-- Hidden Input for ECCN Code -->
+                        <div id="eccn_input_container" class="hidden ml-8 pl-4 border-l-2 border-indigo-100">
+                            <label class="block text-xs font-semibold text-indigo-600 mb-1">Please provide the ECCN:</label>
+                            <input type="text" id="eccn_code" oninput="saveProgress()" class="w-full max-w-xs border-slate-300 rounded-md text-xs p-2 text-slate-900 focus:ring-indigo-500 focus:border-indigo-500" placeholder="e.g. 3A001, 5A002">
+                            <p class="text-[10px] text-orange-600 mt-1"><i class="fa-solid fa-triangle-exclamation mr-1"></i>If an ECCN is provided, an export permit may be required.</p>
+                        </div>
+
+                        <label class="flex items-center gap-3 cursor-pointer p-3 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors">
+                            <input type="radio" name="eccn_status" value="NO" class="text-indigo-600 focus:ring-indigo-500" onclick="toggleECCNInput(false)">
+                            <span class="text-xs font-medium text-slate-700">NO, manufacturer states goods are "NCO" (Not Controlled) or EAR99.</span>
+                        </label>
+
+                        <label class="flex items-center gap-3 cursor-pointer p-3 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors">
+                            <input type="radio" name="eccn_status" value="UNKNOWN" class="text-indigo-600 focus:ring-indigo-500" onclick="toggleECCNInput(false)">
+                            <span class="text-xs font-medium text-slate-700">UNKNOWN, classification not verified.</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION 3: SENSITIVE SECTORS (Standardized) -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="border-b border-slate-100 bg-slate-50/50 px-6 py-4">
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-full bg-slate-800 text-white flex items-center justify-center font-bold text-sm">3</div>
+                        <h3 class="text-base font-semibold text-slate-800">Sensitive Sector Screening</h3>
+                    </div>
+                </div>
+                <div class="p-6">
+                    <div class="bg-blue-50 border border-blue-100 rounded-lg p-4 mb-6">
+                        <p class="text-xs text-blue-900 font-semibold mb-3 leading-relaxed">
+                            Do you declare that the item(s) you retail, trade, or handle do <span class="uppercase font-bold underline">not</span> function within and are <span class="uppercase font-bold underline">not</span> designed for use in any of the following controlled sectors?
+                        </p>
+                        <ul class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-2 text-[10px] text-blue-800 list-disc pl-4">
+                            <li><span class="font-bold text-blue-900">Nuclear:</span> Reactors, heavy water, special materials.</li>
+                            <li><span class="font-bold text-blue-900">Materials/Chemicals:</span> Carbon fiber, explosives, toxins, biological agents/pathogens, body armor.</li>
+                            <li><span class="font-bold text-blue-900">Industrial:</span> CNC machines, freeze dryers, reaction vessels, fermenters.</li>
+                            <li><span class="font-bold text-blue-900">Sensors/Optics:</span> Sonar, thermal cameras, lasers, radar, magnetometers.</li>
+                            <li><span class="font-bold text-blue-900">Navigation:</span> Inertial navigation, gyros, flight control.</li>
+                            <li><span class="font-bold text-blue-900">Marine:</span> Submersibles, underwater robots.</li>
+                            <li><span class="font-bold text-blue-900">Aerospace:</span> Drones/UAVs, rocket systems, space launch vehicles, jet engines.</li>
+                        </ul>
+                    </div>
+
+                    <div class="flex gap-4 mb-4">
+                        <label class="flex-1 flex items-center justify-center gap-2 p-3 border border-slate-200 rounded-lg cursor-pointer hover:bg-slate-50 has-[:checked]:bg-green-50 has-[:checked]:border-green-200 has-[:checked]:text-green-700 transition-all">
+                            <input type="radio" name="sector_check" value="YES" class="text-green-600" onclick="toggleSectorDetails(false)">
+                            <span class="text-sm font-bold"><i class="fa-solid fa-check mr-2"></i>YES, I Declare they are NOT related</span>
+                        </label>
+                        <label class="flex-1 flex items-center justify-center gap-2 p-3 border border-slate-200 rounded-lg cursor-pointer hover:bg-slate-50 has-[:checked]:bg-red-50 has-[:checked]:border-red-200 has-[:checked]:text-red-700 transition-all">
+                            <input type="radio" name="sector_check" value="NO" class="text-red-600" onclick="toggleSectorDetails(true)">
+                            <span class="text-sm font-bold"><i class="fa-solid fa-xmark mr-2"></i>NO, I cannot declare / They ARE related</span>
+                        </label>
+                    </div>
+
+                    <!-- Hidden Detailed Questions (Shown if NO is selected) -->
+                    <div id="sector_details" class="hidden space-y-4 pt-4 border-t border-slate-100 animate-[fadeIn_0.3s_ease-in-out]">
+                        <div class="bg-red-50 p-3 rounded-lg border border-red-100 mb-2">
+                             <p class="text-[10px] text-red-700"><i class="fa-solid fa-triangle-exclamation mr-1"></i>Since you cannot declare non-involvement, please specify details below:</p>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">A. Which Sector applies?</label>
+                            <input type="text" id="sector_name" oninput="saveProgress()" class="w-full border-slate-300 rounded-lg shadow-sm text-xs p-2 text-slate-900 focus:ring-indigo-500 focus:border-indigo-500" placeholder="e.g. Sensors & Lasers">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-2">B. Is the item "Specially Designed" for military or space use?</label>
+                            <div class="flex gap-4">
+                                <label class="flex items-center gap-2"><input type="radio" name="mil_design" value="YES" class="text-indigo-600"><span class="text-xs">Yes</span></label>
+                                <label class="flex items-center gap-2"><input type="radio" name="mil_design" value="NO" class="text-indigo-600"><span class="text-xs">No</span></label>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-2">C. Does item meet specific technical control parameters?</label>
+                            <div class="space-y-2">
+                                <label class="flex items-center gap-2"><input type="radio" name="tech_params" value="YES" class="text-indigo-600"><span class="text-xs">Yes (Likely Controlled)</span></label>
+                                <label class="flex items-center gap-2"><input type="radio" name="tech_params" value="NO" class="text-indigo-600"><span class="text-xs">No (Below Threshold)</span></label>
+                                <label class="flex items-center gap-2"><input type="radio" name="tech_params" value="UNKNOWN" class="text-indigo-600"><span class="text-xs">Unknown (Requires Verification)</span></label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION 4: GENERAL TECH SCREENING -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="border-b border-slate-100 bg-slate-50/50 px-6 py-4">
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-full bg-slate-800 text-white flex items-center justify-center font-bold text-sm">4</div>
+                        <h3 class="text-base font-semibold text-slate-800">General Technology Screening</h3>
+                    </div>
+                </div>
+                <div class="p-6 space-y-6">
+                    
+                    <div class="bg-indigo-50 p-3 rounded-lg border border-indigo-100">
+                        <p class="text-xs text-indigo-900 font-medium">
+                            <i class="fa-solid fa-circle-info mr-1"></i>Please confirm your declarations regarding the items you retail and/or trade below:
+                        </p>
+                    </div>
+
+                    <!-- Q6 Encryption -->
+                    <div>
+                        <div class="flex justify-between items-start gap-4 mb-2">
+                            <div>
+                                <h4 class="text-sm font-bold text-slate-800">Telecommunications & Information Security</h4>
+                                <p class="text-xs text-slate-500 mt-1">Includes encryption, proprietary crypto, jamming equipment, or secure radios.</p>
+                            </div>
+                            <div class="flex gap-2 shrink-0">
+                                <label class="flex items-center gap-1 px-2 py-1 border rounded cursor-pointer has-[:checked]:bg-indigo-50 has-[:checked]:text-indigo-700">
+                                    <input type="radio" name="encryption_check" value="YES" class="text-indigo-600"><span class="text-xs font-bold">YES</span>
+                                </label>
+                                <label class="flex items-center gap-1 px-2 py-1 border rounded cursor-pointer has-[:checked]:bg-slate-100">
+                                    <input type="radio" name="encryption_check" value="NO" class="text-slate-600"><span class="text-xs font-bold">NO</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr class="border-slate-100">
+
+                    <!-- Q7 Computing -->
+                    <div>
+                        <div class="flex justify-between items-start gap-4 mb-2">
+                            <div>
+                                <h4 class="text-sm font-bold text-slate-800">High-Performance Electronics & Computing</h4>
+                                <p class="text-xs text-slate-500 mt-1">Includes high-temp chips, microwave components, signal analyzers, or high-performance computers.</p>
+                            </div>
+                            <div class="flex gap-2 shrink-0">
+                                <label class="flex items-center gap-1 px-2 py-1 border rounded cursor-pointer has-[:checked]:bg-indigo-50 has-[:checked]:text-indigo-700">
+                                    <input type="radio" name="computing_check" value="YES" class="text-indigo-600"><span class="text-xs font-bold">YES</span>
+                                </label>
+                                <label class="flex items-center gap-1 px-2 py-1 border rounded cursor-pointer has-[:checked]:bg-slate-100">
+                                    <input type="radio" name="computing_check" value="NO" class="text-slate-600"><span class="text-xs font-bold">NO</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION 5: END USE DECLARATION -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="border-b border-slate-100 bg-slate-50/50 px-6 py-4">
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-full bg-slate-800 text-white flex items-center justify-center font-bold text-sm">5</div>
+                        <h3 class="text-base font-semibold text-slate-800">End-Use Declaration</h3>
+                    </div>
+                </div>
+                <div class="p-6">
+                    <p class="text-xs text-slate-500 mb-4">To your knowledge, will the items sold and/or traded by you be used for;</p>
+                    <div class="space-y-3">
+                        <div class="flex justify-between items-center py-2 border-b border-slate-50">
+                            <span class="text-xs font-medium text-slate-700">Any military application?</span>
+                            <div class="flex gap-3">
+                                <label class="flex items-center gap-1"><input type="radio" name="enduse_mil" value="YES" class="text-indigo-600"><span class="text-xs">Yes</span></label>
+                                <label class="flex items-center gap-1"><input type="radio" name="enduse_mil" value="NO" class="text-indigo-600"><span class="text-xs">No</span></label>
+                            </div>
+                        </div>
+                        <div class="flex justify-between items-center py-2 border-b border-slate-50">
+                            <span class="text-xs font-medium text-slate-700">Any nuclear, chemical, or biological weapons program?</span>
+                            <div class="flex gap-3">
+                                <label class="flex items-center gap-1"><input type="radio" name="enduse_wmd" value="YES" class="text-indigo-600"><span class="text-xs">Yes</span></label>
+                                <label class="flex items-center gap-1"><input type="radio" name="enduse_wmd" value="NO" class="text-indigo-600"><span class="text-xs">No</span></label>
+                            </div>
+                        </div>
+                        <div class="flex justify-between items-center py-2">
+                            <span class="text-xs font-medium text-slate-700">Any entity currently sanctioned or on a denied parties list?</span>
+                            <div class="flex gap-3">
+                                <label class="flex items-center gap-1"><input type="radio" name="enduse_sanc" value="YES" class="text-indigo-600"><span class="text-xs">Yes</span></label>
+                                <label class="flex items-center gap-1"><input type="radio" name="enduse_sanc" value="NO" class="text-indigo-600"><span class="text-xs">No</span></label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CUSTOMER DECLARATION -->
+            <div class="bg-slate-800 rounded-xl shadow-lg border border-slate-700 overflow-hidden text-white">
+                <div class="p-6">
+                    <h3 class="text-base font-bold mb-4 flex items-center gap-2">
+                        <i class="fa-solid fa-file-signature text-indigo-400"></i> Customer Declaration
+                    </h3>
+                    
+                    <p class="text-xs text-slate-300 mb-6 leading-relaxed">
+                        I hereby declare that the information provided above is true and correct to the best of my knowledge. I acknowledge that I am involved in the trading, selling, or handling of the goods described herein. I understand that dealing in controlled goods—regardless of whether I am the direct exporter—without the necessary permits or regulatory authorization may violate applicable strategic goods control laws.
+                    </p>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 border-t border-slate-700 pt-6">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-300 mb-1">Name</label>
+                            <input type="text" id="declarant_name" oninput="saveProgress()" class="w-full bg-white border-slate-300 rounded-lg shadow-sm text-xs text-slate-900 focus:ring-indigo-500 focus:border-indigo-500 p-2" placeholder="Full Name">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-300 mb-1">Title</label>
+                            <input type="text" id="declarant_title" oninput="saveProgress()" class="w-full bg-white border-slate-300 rounded-lg shadow-sm text-xs text-slate-900 focus:ring-indigo-500 focus:border-indigo-500 p-2" placeholder="Job Title">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-300 mb-1">Entity Name</label>
+                            <input type="text" id="declarant_entity" oninput="saveProgress()" class="w-full bg-white border-slate-300 rounded-lg shadow-sm text-xs text-slate-900 focus:ring-indigo-500 focus:border-indigo-500 p-2" placeholder="Company/Legal Entity">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-300 mb-1">Date</label>
+                            <input type="date" id="declarant_date" oninput="saveProgress()" class="w-full bg-white border-slate-300 rounded-lg shadow-sm text-xs text-slate-900 focus:ring-indigo-500 focus:border-indigo-500 p-2">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </form>
+    </main>
+
+    <!-- Modal -->
+    <div id="modal" class="fixed inset-0 z-50 flex items-center justify-center hidden bg-black bg-opacity-50 backdrop-blur-sm transition-opacity">
+        <div class="bg-white rounded-xl shadow-2xl p-6 w-full max-w-sm mx-4 text-center transform transition-all scale-100">
+            <div id="modal-icon" class="mb-4 text-4xl"></div>
+            <h3 id="modal-title" class="text-lg font-bold text-slate-900 mb-2"></h3>
+            <p id="modal-msg" class="text-sm text-slate-600 mb-6"></p>
+            <button onclick="document.getElementById('modal').classList.add('hidden')" class="w-full bg-slate-800 text-white py-2 rounded-lg font-medium hover:bg-slate-900 shadow-sm">Close</button>
+        </div>
+    </div>
+
+    <script>
+        // Set today's date
+        document.addEventListener('DOMContentLoaded', () => {
+             const today = new Date().toISOString().split('T')[0];
+             const dateInput = document.getElementById('declarant_date');
+             if(dateInput && !dateInput.value) dateInput.value = today;
+        });
+
+        // --- DYNAMIC LOGIC ---
+        
+        function toggleECCNSection(show) {
+            const el = document.getElementById('section_eccn');
+            if(show) {
+                el.classList.remove('hidden');
+            } else {
+                el.classList.add('hidden');
+            }
+            saveProgress();
+        }
+
+        function toggleECCNInput(show) {
+            const el = document.getElementById('eccn_input_container');
+            if(show) {
+                el.classList.remove('hidden');
+                el.classList.add('block');
+            } else {
+                el.classList.add('hidden');
+                el.classList.remove('block');
+                document.getElementById('eccn_code').value = ''; // Clear value if hidden
+            }
+            saveProgress();
+        }
+
+        function toggleSectorDetails(show) {
+            // Logic FLIPPED: Show details if NO is selected (show=true)
+            const el = document.getElementById('sector_details');
+            if(show) {
+                el.classList.remove('hidden');
+            } else {
+                el.classList.add('hidden');
+            }
+            saveProgress();
+        }
+
+        // --- VALIDATION ---
+        function highlightError(element) {
+            if (!element) return;
+            element.classList.add('input-error');
+            
+            // Try to find label to append icon
+            let parent = element.closest('div') || element.parentElement;
+            if (parent && !parent.querySelector('.error-icon')) {
+                const icon = document.createElement('i');
+                icon.className = 'fa-solid fa-circle-exclamation text-red-500 ml-2 error-icon';
+                const label = parent.querySelector('label');
+                if (label) label.appendChild(icon);
+                else parent.insertBefore(icon, element);
+            }
+
+            const clearError = () => {
+                element.classList.remove('input-error');
+                const existingIcon = parent.querySelector('.error-icon');
+                if (existingIcon) existingIcon.remove();
+                element.removeEventListener('input', clearError);
+                element.removeEventListener('change', clearError);
+            };
+            element.addEventListener('input', clearError);
+            element.addEventListener('change', clearError);
+        }
+
+        function validateForm() {
+            let isValid = true;
+            const missing = [];
+
+            // 1. Declaration Validation
+            const decRadios = document.querySelectorAll('input[name="entity_importer_check"]');
+            let isImporter = false;
+            if (![...decRadios].some(r => r.checked)) {
+                missing.push("Section 1: Declaration (Yes/No)"); isValid = false;
+            } else {
+                isImporter = document.querySelector('input[name="entity_importer_check"][value="YES"]').checked;
+            }
+
+            // 2. ECCN (Only if Importer = YES)
+            if (isImporter) {
+                const eccnRadios = document.querySelectorAll('input[name="eccn_status"]');
+                if (![...eccnRadios].some(r => r.checked)) {
+                    missing.push("Section 2: ECCN Classification Status"); isValid = false;
+                } else {
+                    // If Yes selected, check code
+                    const isEccnYes = document.querySelector('input[name="eccn_status"][value="YES"]').checked;
+                    const codeInput = document.getElementById('eccn_code');
+                    if (isEccnYes && !codeInput.value.trim()) {
+                        highlightError(codeInput); missing.push("ECCN Code"); isValid = false;
+                    }
+                }
+            }
+
+            // 3. Sector Radio Validation (Enhanced Logic for Declaration)
+            const sectorRadios = document.querySelectorAll('input[name="sector_check"]');
+            let isSectorDeclaredYes = false; 
+
+            if (![...sectorRadios].some(r => r.checked)) {
+                missing.push("Section 3: Sector Declaration (Yes/No)"); isValid = false;
+            } else {
+                // If they checked YES, they declare NOT involved (Safe).
+                // If they checked NO, they cannot declare (Risk) -> Details needed.
+                isSectorDeclaredYes = document.querySelector('input[name="sector_check"][value="YES"]').checked;
+            }
+
+            // If Sector declaration is NO (Risk), validate sub-questions
+            // Note: isSectorDeclaredYes means "Safe". We validate if !isSectorDeclaredYes.
+            if ([...sectorRadios].some(r => r.checked) && !isSectorDeclaredYes) {
+                const secName = document.getElementById('sector_name');
+                if (!secName.value.trim()) { highlightError(secName); missing.push("Sector Name (Sec 3.A)"); isValid = false; }
+
+                const milRadios = document.querySelectorAll('input[name="mil_design"]');
+                if (![...milRadios].some(r => r.checked)) { missing.push("Military Design Check (Sec 3.B)"); isValid = false; }
+
+                const techRadios = document.querySelectorAll('input[name="tech_params"]');
+                if (![...techRadios].some(r => r.checked)) { missing.push("Tech Parameters Check (Sec 3.C)"); isValid = false; }
+            }
+
+            // 4. Section 4 & 5 Validations (Added as requested)
+            const encRadios = document.querySelectorAll('input[name="encryption_check"]');
+            if (![...encRadios].some(r => r.checked)) { missing.push("Telecommunications & InfoSec (Sec 4)"); isValid = false; }
+
+            const compRadios = document.querySelectorAll('input[name="computing_check"]');
+            if (![...compRadios].some(r => r.checked)) { missing.push("High-Performance Computing (Sec 4)"); isValid = false; }
+
+            const milUseRadios = document.querySelectorAll('input[name="enduse_mil"]');
+            if (![...milUseRadios].some(r => r.checked)) { missing.push("Military End-Use Check (Sec 5)"); isValid = false; }
+
+            const wmdUseRadios = document.querySelectorAll('input[name="enduse_wmd"]');
+            if (![...wmdUseRadios].some(r => r.checked)) { missing.push("WMD/Nuclear End-Use Check (Sec 5)"); isValid = false; }
+
+            const sancRadios = document.querySelectorAll('input[name="enduse_sanc"]');
+            if (![...sancRadios].some(r => r.checked)) { missing.push("Sanctions End-Use Check (Sec 5)"); isValid = false; }
+
+            // Declaration (Added Entity Name check)
+            const decName = document.getElementById('declarant_name');
+            const decTitle = document.getElementById('declarant_title');
+            const decEntity = document.getElementById('declarant_entity');
+
+            if (!decName.value.trim()) { highlightError(decName); missing.push("Declarant Name"); isValid = false; }
+            if (!decTitle.value.trim()) { highlightError(decTitle); missing.push("Declarant Title"); isValid = false; }
+            if (!decEntity.value.trim()) { highlightError(decEntity); missing.push("Declarant Entity Name"); isValid = false; }
+
+            if (!isValid) {
+                showModal('Incomplete Form', `Please complete the following fields:\n\n• ${missing.join('\n• ')}`, 'error');
+            }
+            return isValid;
+        }
+
+
+        // --- CORE FUNCTIONS ---
+        function saveProgress() {
+            const inputs = document.querySelectorAll('input, textarea');
+            const data = {};
+            inputs.forEach((el, i) => {
+                if(el.type === 'radio' || el.type === 'checkbox') {
+                    if(el.checked) data[el.name] = el.value;
+                } else {
+                    data[el.id] = el.value;
+                }
+            });
+            localStorage.setItem('trade_comp_form', JSON.stringify(data));
+        }
+
+        function loadProgress() {
+            const data = JSON.parse(localStorage.getItem('trade_comp_form'));
+            if(!data) return;
+
+            // Restore text inputs
+            const inputs = document.querySelectorAll('input[type="text"], input[type="date"], textarea');
+            inputs.forEach(el => {
+                if(data[el.id]) el.value = data[el.id];
+            });
+
+            // Restore Radios & trigger logic
+            for (const [key, value] of Object.entries(data)) {
+                const radio = document.querySelector(`input[name="${key}"][value="${value}"]`);
+                if(radio) {
+                    radio.checked = true;
+                    // Trigger Logic
+                    if(key === 'entity_importer_check') toggleECCNSection(value === 'YES');
+                    if(key === 'eccn_status') toggleECCNInput(value === 'YES');
+                    
+                    // Logic Flip for Sector: If value is NO, it means Risk -> Show Details
+                    if(key === 'sector_check') toggleSectorDetails(value === 'NO');
+                }
+            }
+        }
+
+        function resetForm() {
+            if(confirm("Clear all data?")) {
+                localStorage.removeItem('trade_comp_form');
+                location.reload();
+            }
+        }
+
+        function populateDummyData() {
+            // New Declaration
+            document.querySelector('input[name="entity_importer_check"][value="YES"]').checked = true;
+            toggleECCNSection(true);
+
+            // ECCN = Unknown
+            document.querySelector('input[name="eccn_status"][value="UNKNOWN"]').checked = true;
+            toggleECCNInput(false);
+
+            // Sector Declaration = YES (Safe)
+            document.querySelector('input[name="sector_check"][value="YES"]').checked = true;
+            toggleSectorDetails(false); // Hide details for safe path
+
+            // Tech = No
+            document.querySelector('input[name="encryption_check"][value="NO"]').checked = true;
+            document.querySelector('input[name="computing_check"][value="NO"]').checked = true;
+
+            // End Use = No
+            document.querySelector('input[name="enduse_mil"][value="NO"]').checked = true;
+            document.querySelector('input[name="enduse_wmd"][value="NO"]').checked = true;
+            document.querySelector('input[name="enduse_sanc"][value="NO"]').checked = true;
+
+            document.getElementById('declarant_name').value = "Jane Smith";
+            document.getElementById('declarant_title').value = "Logistics Manager";
+            document.getElementById('declarant_entity').value = "Global Logistics Pte Ltd";
+
+            saveProgress();
+            showModal('Data Populated', 'Dummy test data loaded.', 'success');
+        }
+
+        function showModal(title, msg, type) {
+            const modal = document.getElementById('modal');
+            const icon = document.getElementById('modal-icon');
+            const t = document.getElementById('modal-title');
+            const m = document.getElementById('modal-msg');
+            const titleEl = document.getElementById('modal-title');
+
+            titleEl.className = 'text-lg font-bold text-slate-900 mb-2';
+
+            if(type === 'error') {
+                icon.innerHTML = '<i class="fa-solid fa-circle-exclamation text-red-500"></i>';
+                titleEl.classList.add('text-red-600');
+            } else if (type === 'success') {
+                icon.innerHTML = '<i class="fa-solid fa-circle-check text-green-500"></i>';
+            } else {
+                icon.innerHTML = '<i class="fa-solid fa-circle-info text-blue-500"></i>';
+            }
+            
+            t.innerText = title;
+            m.innerText = msg;
+            modal.classList.remove('hidden');
+        }
+
+        async function exportToPDF() {
+            if (!validateForm()) return;
+
+            const btn = document.querySelector('button[onclick="exportToPDF()"]');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i>Processing...';
+            btn.disabled = true;
+
+            // Use Declarant Name + Entity for filename
+            const name = document.getElementById('declarant_name').value || "Record";
+            const entity = document.getElementById('declarant_entity').value || "Entity";
+            const element = document.getElementById('checklist-content');
+
+            window.scrollTo(0, 0);
+            document.body.classList.add('compact-pdf');
+            
+            // IP Fetch
+            let ipAddress = "IP Not Detected";
+            try {
+                const response = await fetch('https://api.ipify.org?format=json');
+                const data = await response.json();
+                ipAddress = data.ip;
+            } catch (error) { console.warn(error); }
+
+            // Footer
+            const now = new Date().toLocaleString('en-SG', { 
+                day: '2-digit', month: 'short', year: 'numeric',
+                hour: '2-digit', minute: '2-digit', second: '2-digit',
+                timeZoneName: 'short'
+            });
+
+            const footer = document.createElement('div');
+            footer.innerHTML = `
+                <div class="mt-4 pt-2 border-t border-slate-400 text-center">
+                    <p class="text-[6px] font-bold text-slate-800 uppercase tracking-wider mb-0.5">Compliance & Regulatory Affairs Record</p>
+                    <p class="text-[5px] text-slate-500 font-medium uppercase mb-0.5">Strictly Confidential • For Internal Use Only</p>
+                    <div class="flex justify-center gap-3 text-[5px] text-slate-400 font-mono">
+                        <span>Timestamp: ${now}</span>
+                        <span>|</span>
+                        <span>Origin IP: ${ipAddress}</span>
+                    </div>
+                </div>
+            `;
+            element.appendChild(footer);
+
+            const opt = {
+                margin:       0.2,
+                filename:     `TradeCompliance_${name.replace(/\s+/g,'_')}_${entity.replace(/\s+/g,'_')}.pdf`,
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2, useCORS: true, scrollY: 0 },
+                jsPDF:        { unit: 'in', format: 'a4', orientation: 'portrait' },
+                // ADDED PAGEBREAK CONFIGURATION
+                pagebreak:    { mode: ['avoid-all', 'css', 'legacy'] }
+            };
+
+            html2pdf().set(opt).from(element).save().then(() => {
+                footer.remove();
+                document.body.classList.remove('compact-pdf');
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            });
+        }
+    </script>
+</body>
+</html>
