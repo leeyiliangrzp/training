@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Razorpay Onboarding Demo</title>
+    <style>
+        :root {
+            --rzp-blue: #3385ff;
+            --rzp-dark: #02042b;
+            --bg-color: #f4f8ff;
+            --text-color: #333333;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        header {
+            background-color: var(--rzp-dark);
+            color: white;
+            width: 100%;
+            padding: 40px 20px;
+            text-align: center;
+            box-sizing: border-box;
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 2.5rem;
+        }
+
+        header p {
+            margin-top: 10px;
+            font-size: 1.1rem;
+            color: #d1e2ff;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 50px auto;
+            padding: 0 20px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 25px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .card {
+            background: white;
+            border-radius: 8px;
+            padding: 30px 20px;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            transition: transform 0.2s, box-shadow 0.2s;
+            border-top: 4px solid var(--rzp-blue);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 15px rgba(0,0,0,0.1);
+        }
+
+        .card h3 {
+            margin-top: 0;
+            color: var(--rzp-dark);
+            font-size: 1.25rem;
+        }
+
+        .card p {
+            color: #666;
+            font-size: 0.95rem;
+            margin-bottom: 25px;
+            flex-grow: 1;
+        }
+
+        .btn {
+            display: inline-block;
+            background-color: var(--rzp-blue);
+            color: white;
+            text-decoration: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            font-weight: bold;
+            transition: background-color 0.2s;
+            margin-top: auto;
+        }
+
+        .btn:hover {
+            background-color: #256deb;
+        }
+
+        footer {
+            margin-top: auto;
+            padding: 20px;
+            text-align: center;
+            font-size: 0.85rem;
+            color: #888;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Razorpay Onboarding Training</h1>
+        <p>Select a module below to view the interactive demo forms.</p>
+    </header>
+
+    <div class="container">
+        <div class="card">
+            <h3>General Onboarding</h3>
+            <p>Standard data collection form for merchant basic details, business registration, and initial KYC verification.</p>
+            <a href="https://leeyiliangrzp.github.io/training/ONBOARDING.html" class="btn" target="_blank">View Form</a>
+        </div>
+
+        <div class="card">
+            <h3>Dual-Use Goods</h3>
+            <p>Special compliance declarations for merchants selling items that have both commercial and potential military applications.</p>
+            <a href="https://leeyiliangrzp.github.io/training/DUALGOODS.html" class="btn" target="_blank">View Form</a>
+        </div>
+
+        <div class="card">
+            <h3>Correspondent Banking</h3>
+            <p>Regulatory questionnaire regarding international fund transfers, nested accounts, and correspondent relationships.</p>
+            <a href="https://leeyiliangrzp.github.io/training/CORRESPONDENT.html" class="btn" target="_blank">View Form</a>
+        </div>
+
+        <div class="card">
+            <h3>Sub-Merchants (Route)</h3>
+            <p>Account creation and fund-flow splitting structures for marketplaces, partners, and linked sub-merchants.</p>
+            <a href="https://leeyiliangrzp.github.io/training/SUBMERCHANTS.html" class="btn" target="_blank">View Form</a>
+        </div>
+    </div>
+
+    <footer>
+        <p>&copy; Internal Training Demo purposes only.</p>
+    </footer>
+
+</body>
+</html>
